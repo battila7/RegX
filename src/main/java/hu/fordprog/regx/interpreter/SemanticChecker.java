@@ -12,10 +12,10 @@ import java.util.List;
 import java.util.Optional;
 import hu.fordprog.regx.grammar.RegxBaseListener;
 import hu.fordprog.regx.grammar.RegxParser;
+import hu.fordprog.regx.interpreter.error.IdentifierAlreadyDeclaredError;
+import hu.fordprog.regx.interpreter.error.SemanticError;
 import hu.fordprog.regx.interpreter.symbol.SymbolTable;
 import hu.fordprog.regx.interpreter.symbol.SymbolTable.Entry;
-import hu.fordprog.regx.interpreter.symbol.SymbolType;
-import hu.fordprog.regx.interpreter.symbol.SymbolValue;
 
 final class SemanticChecker extends RegxBaseListener {
   private final SymbolTable symbolTable;
@@ -29,9 +29,21 @@ final class SemanticChecker extends RegxBaseListener {
   }
 
   @Override
+  public void enterProgram(RegxParser.ProgramContext ctx) {
+    symbolTable.newScope();
+  }
+
+  @Override
+  public void exitProgram(RegxParser.ProgramContext ctx) {
+    symbolTable.destroyScope();
+  }
+
+  @Override
   public void exitStringDeclaration(RegxParser.StringDeclarationContext ctx) {
     if (checkIfDeclarationIsUnique(ctx.identifier())) {
       Entry entry = new Entry(ctx.identifier().getText(), STRING, fromContext(ctx), from(null));
+
+      symbolTable.addEntry(entry);
     }
   }
 
@@ -39,6 +51,8 @@ final class SemanticChecker extends RegxBaseListener {
   public void exitListDeclaration(RegxParser.ListDeclarationContext ctx) {
     if (checkIfDeclarationIsUnique(ctx.identifier())) {
       Entry entry = new Entry(ctx.identifier().getText(), LIST, fromContext(ctx), from(null));
+
+      symbolTable.addEntry(entry);
     }
   }
 
@@ -46,6 +60,8 @@ final class SemanticChecker extends RegxBaseListener {
   public void exitRegexDeclaration(RegxParser.RegexDeclarationContext ctx) {
     if (checkIfDeclarationIsUnique(ctx.identifier())) {
       Entry entry = new Entry(ctx.identifier().getText(), REGEX, fromContext(ctx), from(null));
+
+      symbolTable.addEntry(entry);
     }
   }
 

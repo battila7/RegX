@@ -1,4 +1,6 @@
-package hu.fordprog.regx.interpreter;
+package hu.fordprog.regx.interpreter.error;
+
+import hu.fordprog.regx.interpreter.CodePosition;
 
 public class IdentifierAlreadyDeclaredError extends SemanticError {
   private final String identifier;
@@ -17,7 +19,7 @@ public class IdentifierAlreadyDeclaredError extends SemanticError {
 
   @Override
   public String getMessage() {
-    return "Identifier \"" + identifier + "already declared in current scope at "
+    return "Identifier \"" + identifier + "\" already declared in current scope at "
         + originalDeclaration;
   }
 }

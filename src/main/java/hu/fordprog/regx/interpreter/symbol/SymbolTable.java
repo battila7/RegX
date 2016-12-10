@@ -20,6 +20,8 @@ public class SymbolTable {
     if (tableList.isEmpty()) {
       throw new IllegalStateException("The Symbol Table is empty!");
     }
+
+    tableList.poll();
   }
 
   public void addEntry(Entry entry) {

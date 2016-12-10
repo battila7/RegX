@@ -4,16 +4,21 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 
 import java.io.FileNotFoundException;
-import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
+import hu.fordprog.regx.input.ConstantInputReader;
 import hu.fordprog.regx.input.FileInputReader;
 import hu.fordprog.regx.input.InputReader;
 import hu.fordprog.regx.input.StdinInputReader;
 import hu.fordprog.regx.interpreter.Interpreter;
 
 public class App {
+  /*
+   * Remove in release
+   */
+  private static final boolean DEBUG = true;
+
   public static void main(String[] args) {
     Arguments arguments = new Arguments();
 
@@ -35,17 +40,26 @@ public class App {
                    .outputWriter(getOutput(arguments))
                    .verbose(arguments.verbose)
                    .build();
+
+    interpreter.interpret();
   }
 
   private static PrintWriter getOutput(Arguments arguments) throws FileNotFoundException {
     if (arguments.outputPath == null) {
-      return new PrintWriter(System.out);
+      return new PrintWriter(System.out, true);
     }
 
     return new PrintWriter(arguments.outputPath);
   }
 
   private static InputReader getInput(Arguments arguments) {
+    /*
+     * Remove in release
+     */
+    if (DEBUG) {
+      return new ConstantInputReader("string str;\nstring str;\n");
+    }
+
     if (arguments.files.isEmpty()) {
       return new StdinInputReader();
     }
