@@ -1,9 +1,5 @@
 grammar Regx;
 
-@header {
-package hu.fordprog.regx.grammar;
-}
-
 program
   : declarationSequence? EOF
   ;

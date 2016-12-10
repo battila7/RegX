@@ -22,8 +22,8 @@ public class SymbolTable {
     }
   }
 
-  public void addEntry(String identifier, Entry entry) {
-    tableList.getFirst().put(identifier, entry);
+  public void addEntry(Entry entry) {
+    tableList.getFirst().put(entry.getIdentifier(), entry);
   }
 
   public Optional<Entry> getEntry(String identifier) {
@@ -31,6 +31,10 @@ public class SymbolTable {
         .map(m -> m.get(identifier))
         .filter(e -> e != null)
         .findFirst();
+  }
+
+  public Optional<Entry> getEntryFromCurrentScope(String identifier) {
+    return Optional.ofNullable(tableList.peek().get(identifier));
   }
 
   public static class Entry {
