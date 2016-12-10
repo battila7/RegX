@@ -84,10 +84,10 @@ statement
   ;
 
 expression
-  : identifier
-  | literal
-  | functionCall
-  | assignment
+  : identifier    #identifierExpression
+  | literal       #literalExpression
+  | functionCall  #functionCallExpression
+  | assignment    #assignmentExpression
   ;
 
 literal
