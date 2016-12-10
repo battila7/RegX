@@ -21,7 +21,7 @@ variableDeclaration
   ;
 
 stringDeclaration
-  : STRING Identifier stringInitializer? ';'
+  : STRING identifier stringInitializer? ';'
   ;
 
 stringInitializer
@@ -29,7 +29,7 @@ stringInitializer
   ;
 
 listDeclaration
-  : LIST Identifier listInitializer? ';'
+  : LIST identifier listInitializer? ';'
   ;
 
 listInitializer
@@ -45,7 +45,7 @@ stringLiteralList
   ;
 
 regexDeclaration
-  : REGEX Identifier regexInitializer? ';'
+  : REGEX identifier regexInitializer? ';'
   ;
 
 regexInitializer
@@ -68,7 +68,7 @@ formalParameterList
   ;
 
 formalParameter
-  : typeName Identifier
+  : typeName identifier
   ;
 
 block
@@ -84,14 +84,10 @@ statement
   ;
 
 expression
-  : qualifiedName
+  : identifier
   | literal
   | functionCall
   | assignment
-  ;
-
-qualifiedName
-  : Identifier ('.' Identifier)*
   ;
 
 literal
@@ -101,7 +97,7 @@ literal
   ;
 
 functionCall
-  : qualifiedName '(' argumentList? ')';
+  : identifier '(' argumentList? ')';
 
 argumentList
   : argument (',' argument)*
@@ -112,15 +108,19 @@ argument
   ;
 
 assignment
-  : <assoc=right> qualifiedName '=' expression
+  : <assoc=right> identifier '=' expression
   ;
 
 forLoop
-  : FOR '(' Identifier ':' expression ')' block
+  : FOR '(' identifier ':' expression ')' block
   ;
 
 returnStatement
   : RETURN expression;
+
+identifier
+  : Identifier
+  ;
 
 typeName
   : STRING
