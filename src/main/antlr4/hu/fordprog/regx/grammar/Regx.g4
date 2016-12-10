@@ -53,7 +53,7 @@ regexInitializer
   ;
 
 functionDeclaration
-  : 'function' returnType Identifier '(' formalParameterList? ')' block
+  : 'function' returnType identifier '(' formalParameterList? ')' block
   ;
 
 returnType

@@ -1,6 +1,7 @@
 package hu.fordprog.regx.interpreter;
 
 import static hu.fordprog.regx.interpreter.CodePosition.fromContext;
+import static hu.fordprog.regx.interpreter.symbol.SymbolType.FUNCTION;
 import static hu.fordprog.regx.interpreter.symbol.SymbolType.LIST;
 import static hu.fordprog.regx.interpreter.symbol.SymbolType.REGEX;
 import static hu.fordprog.regx.interpreter.symbol.SymbolType.STRING;
@@ -63,6 +64,36 @@ final class SemanticChecker extends RegxBaseListener {
 
       symbolTable.addEntry(entry);
     }
+  }
+
+  @Override
+  public void enterFunctionDeclaration(RegxParser.FunctionDeclarationContext ctx) {
+    if (checkIfDeclarationIsUnique(ctx.identifier())) {
+      Entry entry = new Entry(ctx.identifier().getText(), FUNCTION, fromContext(ctx), from(null));
+
+      symbolTable.addEntry(entry);
+    }
+
+    symbolTable.newScope();
+  }
+
+  @Override
+  public void exitFunctionDeclaration(RegxParser.FunctionDeclarationContext ctx) {
+    symbolTable.destroyScope();
+  }
+
+  @Override
+  public void enterForLoop(RegxParser.ForLoopContext ctx) {
+    symbolTable.newScope();
+
+    Entry entry = new Entry(ctx.identifier().getText(), STRING, fromContext(ctx), from(null));
+
+    symbolTable.addEntry(entry);
+  }
+
+  @Override
+  public void exitForLoop(RegxParser.ForLoopContext ctx) {
+    symbolTable.destroyScope();
   }
 
   public List<SemanticError> getErrors() {

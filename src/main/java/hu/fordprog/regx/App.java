@@ -57,7 +57,7 @@ public class App {
      * Remove in release
      */
     if (DEBUG) {
-      return new ConstantInputReader("string str;\nstring str;\n");
+      return new ConstantInputReader("function void main() { for (asd : dsa) return //; }");
     }
 
     if (arguments.files.isEmpty()) {
