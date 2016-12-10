@@ -9,6 +9,7 @@ import static hu.fordprog.regx.interpreter.symbol.SymbolValue.from;
 import static hu.fordprog.regx.interpreter.symbol.Type.VOID;
 
 import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.ParseTreeProperty;
 
 import java.util.ArrayList;
@@ -18,6 +19,7 @@ import java.util.Optional;
 import hu.fordprog.regx.grammar.RegxBaseListener;
 import hu.fordprog.regx.grammar.RegxParser;
 import hu.fordprog.regx.grammar.RegxParser.FunctionCallContext;
+import hu.fordprog.regx.grammar.RegxParser.FunctionDeclarationContext;
 import hu.fordprog.regx.interpreter.error.*;
 import hu.fordprog.regx.interpreter.symbol.*;
 
@@ -30,6 +32,8 @@ final class SemanticChecker extends RegxBaseListener {
 
   private final ParseTreeProperty<Type> expressionTypes;
 
+  private final ParseTreeProperty<Boolean> hasReturnStatement;
+
   public SemanticChecker() {
     this.symbolTable = new SymbolTable();
 
@@ -38,6 +42,8 @@ final class SemanticChecker extends RegxBaseListener {
     this.functions = new ParseTreeProperty<>();
 
     this.expressionTypes = new ParseTreeProperty<>();
+
+    this.hasReturnStatement = new ParseTreeProperty<>();
   }
 
   @Override
@@ -78,7 +84,7 @@ final class SemanticChecker extends RegxBaseListener {
   }
 
   @Override
-  public void enterFunctionDeclaration(RegxParser.FunctionDeclarationContext ctx) {
+  public void enterFunctionDeclaration(FunctionDeclarationContext ctx) {
     if (checkIfDeclarationIsUnique(ctx.identifier())) {
       addFunctionSymbol(ctx);
     }
@@ -86,7 +92,7 @@ final class SemanticChecker extends RegxBaseListener {
     symbolTable.newScope();
   }
 
-  private void addFunctionSymbol(RegxParser.FunctionDeclarationContext ctx) {
+  private void addFunctionSymbol(FunctionDeclarationContext ctx) {
     Type returnType = Type.valueOf(ctx.returnType().getText().toUpperCase());
 
     UserDefinedFunction function =
@@ -98,7 +104,7 @@ final class SemanticChecker extends RegxBaseListener {
         new Symbol(ctx.identifier().getText(), FUNCTION, fromContext(ctx), from(function)));
   }
 
-  private List<Symbol> parseFunctionArguments(RegxParser.FunctionDeclarationContext ctx) {
+  private List<Symbol> parseFunctionArguments(FunctionDeclarationContext ctx) {
     if (ctx.formalParameterList() == null) {
       return Collections.emptyList();
     }
@@ -118,30 +124,45 @@ final class SemanticChecker extends RegxBaseListener {
 
   @Override
   public void enterReturnStatement(RegxParser.ReturnStatementContext ctx) {
-    Function function = findParentFunction(ctx);
+    FunctionDeclarationContext functionCtx = findParentFunction(ctx);
 
-    if (function.getReturnType() == VOID) {
+    if (functions.get(functionCtx).getReturnType() == VOID) {
       errors.add(new ReturnFromVoidFunctionError(fromContext(ctx)));
     }
+
+    hasReturnStatement.put(functionCtx, true);
   }
 
   @Override
   public void exitReturnStatement(RegxParser.ReturnStatementContext ctx) {
-    super.exitReturnStatement(ctx);
+    FunctionDeclarationContext functionCtx = findParentFunction(ctx);
+
+    Type targetType = functions.get(functionCtx).getReturnType();
+
+    Type sourceType = expressionTypes.get(ctx.expression());
+
+    if (targetType != sourceType) {
+      errors.add(new ReturnTypeMismatch(functionCtx.identifier().getText(),
+          targetType, sourceType, fromContext(ctx)));
+    }
   }
 
-  private Function findParentFunction(RegxParser.ReturnStatementContext ctx) {
+  private FunctionDeclarationContext findParentFunction(RegxParser.ReturnStatementContext ctx) {
     ParserRuleContext parent = ctx;
 
     do {
       parent = parent.getParent();
-    } while (!(parent instanceof RegxParser.FunctionDeclarationContext));
+    } while (!(parent instanceof FunctionDeclarationContext));
 
-    return functions.get(parent);
+    return (FunctionDeclarationContext)parent;
   }
 
   @Override
-  public void exitFunctionDeclaration(RegxParser.FunctionDeclarationContext ctx) {
+  public void exitFunctionDeclaration(FunctionDeclarationContext ctx) {
+    if (functions.get(ctx).getReturnType() != VOID && hasReturnStatement.get(ctx) == null) {
+      errors.add(new MissingReturnInFunctionError(ctx.identifier().getText(), fromContext(ctx)));
+    }
+
     symbolTable.destroyScope();
   }
 
