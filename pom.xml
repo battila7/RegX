@@ -19,6 +19,7 @@
         <project.build.outputEncoding>UTF-8</project.build.outputEncoding>
 
         <antlr.version>4.5.3</antlr.version>
+        <jcommander.version>1.58</jcommander.version>
     </properties>
 
 <dependencies>
@@ -26,6 +27,11 @@
             <groupId>org.antlr</groupId>
             <artifactId>antlr4</artifactId>
             <version>${antlr.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.beust</groupId>
+            <artifactId>jcommander</artifactId>
+            <version>${jcommander.version}</version>
         </dependency>
     </dependencies>
 
