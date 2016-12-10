@@ -5,10 +5,11 @@ import java.util.List;
 public abstract class Function {
   private final List<Symbol> arguments;
 
-  private final ReturnType returnType;
+  private final Type returnType;
 
-  public Function(List<Symbol> arguments, ReturnType returnType) {
+  public Function(List<Symbol> arguments, Type returnType) {
     this.arguments = arguments;
+
     this.returnType = returnType;
   }
 
@@ -16,19 +17,9 @@ public abstract class Function {
     return arguments;
   }
 
-  public ReturnType getReturnType() {
+  public Type getReturnType() {
     return returnType;
   }
 
   public abstract void accept(FunctionVisitor visitor);
-
-  public enum ReturnType {
-    STRING,
-
-    LIST,
-
-    REGEX,
-
-    VOID
-  }
 }

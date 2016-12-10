@@ -1,12 +1,12 @@
 package hu.fordprog.regx.interpreter;
 
 import static hu.fordprog.regx.interpreter.CodePosition.fromContext;
-import static hu.fordprog.regx.interpreter.symbol.Function.ReturnType.VOID;
-import static hu.fordprog.regx.interpreter.symbol.SymbolType.FUNCTION;
-import static hu.fordprog.regx.interpreter.symbol.SymbolType.LIST;
-import static hu.fordprog.regx.interpreter.symbol.SymbolType.REGEX;
-import static hu.fordprog.regx.interpreter.symbol.SymbolType.STRING;
+import static hu.fordprog.regx.interpreter.symbol.Type.FUNCTION;
+import static hu.fordprog.regx.interpreter.symbol.Type.LIST;
+import static hu.fordprog.regx.interpreter.symbol.Type.REGEX;
+import static hu.fordprog.regx.interpreter.symbol.Type.STRING;
 import static hu.fordprog.regx.interpreter.symbol.SymbolValue.from;
+import static hu.fordprog.regx.interpreter.symbol.Type.VOID;
 
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ParseTreeProperty;
@@ -17,17 +17,9 @@ import java.util.List;
 import java.util.Optional;
 import hu.fordprog.regx.grammar.RegxBaseListener;
 import hu.fordprog.regx.grammar.RegxParser;
-import hu.fordprog.regx.interpreter.error.FunctionCallExpectedError;
-import hu.fordprog.regx.interpreter.error.IdentifierAlreadyDeclaredError;
-import hu.fordprog.regx.interpreter.error.ReturnFromVoidFunctionError;
-import hu.fordprog.regx.interpreter.error.SemanticError;
-import hu.fordprog.regx.interpreter.error.UndeclaredIdentifierError;
-import hu.fordprog.regx.interpreter.symbol.Function;
-import hu.fordprog.regx.interpreter.symbol.Function.ReturnType;
-import hu.fordprog.regx.interpreter.symbol.SymbolTable;
-import hu.fordprog.regx.interpreter.symbol.Symbol;
-import hu.fordprog.regx.interpreter.symbol.SymbolType;
-import hu.fordprog.regx.interpreter.symbol.UserDefinedFunction;
+import hu.fordprog.regx.grammar.RegxParser.FunctionCallContext;
+import hu.fordprog.regx.interpreter.error.*;
+import hu.fordprog.regx.interpreter.symbol.*;
 
 final class SemanticChecker extends RegxBaseListener {
   private final SymbolTable symbolTable;
@@ -36,7 +28,7 @@ final class SemanticChecker extends RegxBaseListener {
 
   private final ParseTreeProperty<Function> functions;
 
-  private final ParseTreeProperty<SymbolType> expressionTypes;
+  private final ParseTreeProperty<Type> expressionTypes;
 
   public SemanticChecker() {
     this.symbolTable = new SymbolTable();
@@ -95,7 +87,7 @@ final class SemanticChecker extends RegxBaseListener {
   }
 
   private void addFunctionSymbol(RegxParser.FunctionDeclarationContext ctx) {
-    ReturnType returnType = ReturnType.valueOf(ctx.returnType().getText().toUpperCase());
+    Type returnType = Type.valueOf(ctx.returnType().getText().toUpperCase());
 
     UserDefinedFunction function =
         new UserDefinedFunction(parseFunctionArguments(ctx), returnType, ctx);
@@ -115,7 +107,7 @@ final class SemanticChecker extends RegxBaseListener {
 
     for (RegxParser.FormalParameterContext paramCtx : ctx.formalParameterList().formalParameter()) {
       Symbol s = new Symbol(paramCtx.identifier().getText(),
-          SymbolType.valueOf(paramCtx.typeName().getText().toUpperCase()),
+          Type.valueOf(paramCtx.typeName().getText().toUpperCase()),
           fromContext(paramCtx), from(null));
 
       symbols.add(s);
@@ -163,46 +155,83 @@ final class SemanticChecker extends RegxBaseListener {
       return;
     }
 
-    if (identifier.get().getSymbolType() == FUNCTION) {
+    if (identifier.get().getType() == FUNCTION) {
       errors.add(new FunctionCallExpectedError(ctx.identifier().getText(), fromContext(ctx)));
+
+      return;
     }
 
-    expressionTypes.put(ctx, identifier.get().getSymbolType());
-  }
-
-  @Override
-  public void exitIdentifierExpression(RegxParser.IdentifierExpressionContext ctx) {
-    super.exitIdentifierExpression(ctx);
+    expressionTypes.put(ctx, identifier.get().getType());
   }
 
   @Override
   public void enterLiteralExpression(RegxParser.LiteralExpressionContext ctx) {
-    super.enterLiteralExpression(ctx);
-  }
-
-  @Override
-  public void exitLiteralExpression(RegxParser.LiteralExpressionContext ctx) {
-    super.exitLiteralExpression(ctx);
+    if (ctx.literal().stringLiteral() != null) {
+      expressionTypes.put(ctx, STRING);
+    } else if (ctx.literal().stringListLiteral() != null) {
+      expressionTypes.put(ctx, LIST);
+    } else {
+      expressionTypes.put(ctx, REGEX);
+    }
   }
 
   @Override
   public void enterFunctionCallExpression(RegxParser.FunctionCallExpressionContext ctx) {
-    super.enterFunctionCallExpression(ctx);
-  }
+    Optional<Symbol> symbol = symbolTable.getEntry(ctx.functionCall().identifier().getText());
 
-  @Override
-  public void exitFunctionCallExpression(RegxParser.FunctionCallExpressionContext ctx) {
-    super.exitFunctionCallExpression(ctx);
+    if (!symbol.isPresent()) {
+      errors.add(new UndeclaredIdentifierError(ctx.functionCall().identifier().getText(),
+                 fromContext(ctx)));
+
+      return;
+    }
+
+    Function function = (Function)symbol.get().getSymbolValue().getValue();
+
+    expressionTypes.put(ctx, function.getReturnType());
   }
 
   @Override
   public void enterAssignmentExpression(RegxParser.AssignmentExpressionContext ctx) {
-    super.enterAssignmentExpression(ctx);
+    Optional<Symbol> symbol = symbolTable.getEntry(ctx.assignment().identifier().getText());
+
+    if (!symbol.isPresent()) {
+      errors.add(new UndeclaredIdentifierError(ctx.assignment().identifier().getText(),
+                 fromContext(ctx)));
+
+      return;
+    }
+
+    if (symbol.get().getType() == FUNCTION) {
+      errors.add(new AssignmentToFunctionError(fromContext(ctx)));
+
+      return;
+    }
+
+    expressionTypes.put(ctx, symbol.get().getType());
   }
 
   @Override
   public void exitAssignmentExpression(RegxParser.AssignmentExpressionContext ctx) {
-    super.exitAssignmentExpression(ctx);
+    Type targetType = expressionTypes.get(ctx);
+
+    Type sourceType = expressionTypes.get(ctx.assignment().expression());
+
+    if (sourceType == VOID) {
+      FunctionCallContext functionCtx =
+          (FunctionCallContext)ctx.assignment().expression().getRuleContext();
+
+      Symbol functionSymbol = symbolTable.getEntry(functionCtx.identifier().getText()).get();
+
+      errors.add(new AssignmentFromVoidFunctionError(functionSymbol.getIdentifier(),
+          functionSymbol.getFirstOccurrence(), fromContext(ctx)));
+
+      return;
+    }
+
+    if (targetType != sourceType) {
+      errors.add(new TypeMismatchError(targetType, sourceType, fromContext(ctx)));
+    }
   }
 
   @Override

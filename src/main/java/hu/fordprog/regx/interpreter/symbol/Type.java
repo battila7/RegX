@@ -1,11 +1,13 @@
 package hu.fordprog.regx.interpreter.symbol;
 
-public enum SymbolType {
+public enum Type {
   STRING,
 
   LIST,
 
   REGEX,
 
-  FUNCTION
+  FUNCTION,
+
+  VOID
 }

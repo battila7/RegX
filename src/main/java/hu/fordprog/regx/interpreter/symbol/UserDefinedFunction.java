@@ -7,7 +7,7 @@ public class UserDefinedFunction extends Function {
   private final FunctionDeclarationContext context;
 
   public UserDefinedFunction(List<Symbol> arguments,
-                             ReturnType returnType,
+                             Type returnType,
                              FunctionDeclarationContext context) {
     super(arguments, returnType);
 

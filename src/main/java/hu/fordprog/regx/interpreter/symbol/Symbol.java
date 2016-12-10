@@ -5,17 +5,17 @@ import hu.fordprog.regx.interpreter.CodePosition;
 public class Symbol {
   private final String identifier;
 
-  private final SymbolType symbolType;
+  private final Type type;
 
   private final CodePosition firstOccurrence;
 
   private final SymbolValue<?> symbolValue;
 
-  public Symbol(String identifier, SymbolType symbolType,
+  public Symbol(String identifier, Type type,
                 CodePosition firstOccurrence, SymbolValue<?> symbolValue) {
     this.identifier = identifier;
 
-    this.symbolType = symbolType;
+    this.type = type;
 
     this.firstOccurrence = firstOccurrence;
 
@@ -26,8 +26,8 @@ public class Symbol {
     return identifier;
   }
 
-  public SymbolType getSymbolType() {
-    return symbolType;
+  public Type getType() {
+    return type;
   }
 
   public CodePosition getFirstOccurrence() {
