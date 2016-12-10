@@ -16,7 +16,7 @@ import hu.fordprog.regx.grammar.RegxParser;
 import hu.fordprog.regx.interpreter.error.IdentifierAlreadyDeclaredError;
 import hu.fordprog.regx.interpreter.error.SemanticError;
 import hu.fordprog.regx.interpreter.symbol.SymbolTable;
-import hu.fordprog.regx.interpreter.symbol.SymbolTable.Entry;
+import hu.fordprog.regx.interpreter.symbol.Symbol;
 
 final class SemanticChecker extends RegxBaseListener {
   private final SymbolTable symbolTable;
@@ -42,36 +42,36 @@ final class SemanticChecker extends RegxBaseListener {
   @Override
   public void exitStringDeclaration(RegxParser.StringDeclarationContext ctx) {
     if (checkIfDeclarationIsUnique(ctx.identifier())) {
-      Entry entry = new Entry(ctx.identifier().getText(), STRING, fromContext(ctx), from(null));
+      Symbol symbol = new Symbol(ctx.identifier().getText(), STRING, fromContext(ctx), from(null));
 
-      symbolTable.addEntry(entry);
+      symbolTable.addEntry(symbol);
     }
   }
 
   @Override
   public void exitListDeclaration(RegxParser.ListDeclarationContext ctx) {
     if (checkIfDeclarationIsUnique(ctx.identifier())) {
-      Entry entry = new Entry(ctx.identifier().getText(), LIST, fromContext(ctx), from(null));
+      Symbol symbol = new Symbol(ctx.identifier().getText(), LIST, fromContext(ctx), from(null));
 
-      symbolTable.addEntry(entry);
+      symbolTable.addEntry(symbol);
     }
   }
 
   @Override
   public void exitRegexDeclaration(RegxParser.RegexDeclarationContext ctx) {
     if (checkIfDeclarationIsUnique(ctx.identifier())) {
-      Entry entry = new Entry(ctx.identifier().getText(), REGEX, fromContext(ctx), from(null));
+      Symbol symbol = new Symbol(ctx.identifier().getText(), REGEX, fromContext(ctx), from(null));
 
-      symbolTable.addEntry(entry);
+      symbolTable.addEntry(symbol);
     }
   }
 
   @Override
   public void enterFunctionDeclaration(RegxParser.FunctionDeclarationContext ctx) {
     if (checkIfDeclarationIsUnique(ctx.identifier())) {
-      Entry entry = new Entry(ctx.identifier().getText(), FUNCTION, fromContext(ctx), from(null));
+      Symbol symbol = new Symbol(ctx.identifier().getText(), FUNCTION, fromContext(ctx), from(null));
 
-      symbolTable.addEntry(entry);
+      symbolTable.addEntry(symbol);
     }
 
     symbolTable.newScope();
@@ -86,9 +86,9 @@ final class SemanticChecker extends RegxBaseListener {
   public void enterForLoop(RegxParser.ForLoopContext ctx) {
     symbolTable.newScope();
 
-    Entry entry = new Entry(ctx.identifier().getText(), STRING, fromContext(ctx), from(null));
+    Symbol symbol = new Symbol(ctx.identifier().getText(), STRING, fromContext(ctx), from(null));
 
-    symbolTable.addEntry(entry);
+    symbolTable.addEntry(symbol);
   }
 
   @Override
@@ -101,7 +101,7 @@ final class SemanticChecker extends RegxBaseListener {
   }
 
   private boolean checkIfDeclarationIsUnique(RegxParser.IdentifierContext ctx) {
-    Optional<Entry> originalEntry = symbolTable.getEntryFromCurrentScope(ctx.getText());
+    Optional<Symbol> originalEntry = symbolTable.getEntryFromCurrentScope(ctx.getText());
 
     if (originalEntry.isPresent()) {
       errors.add(new IdentifierAlreadyDeclaredError(ctx.getText(),
