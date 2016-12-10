@@ -1,5 +1,9 @@
 grammar RegularExpression;
 
+@header {
+package hu.fordprog.regx.grammar;
+}
+
 start
   : regex EOF
   ;
