@@ -8,6 +8,7 @@ import static hu.fordprog.regx.interpreter.symbol.Type.STRING;
 import static hu.fordprog.regx.interpreter.symbol.SymbolValue.from;
 import static hu.fordprog.regx.interpreter.symbol.Type.VOID;
 
+import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ParseTreeProperty;
@@ -16,6 +17,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import hu.fordprog.regx.grammar.RegularExpressionLexer;
+import hu.fordprog.regx.grammar.RegularExpressionParser;
 import hu.fordprog.regx.grammar.RegxBaseListener;
 import hu.fordprog.regx.grammar.RegxParser;
 import hu.fordprog.regx.grammar.RegxParser.DeclarationInitializerContext;
@@ -67,6 +70,8 @@ final class SemanticChecker extends RegxBaseListener {
     if (function.getReturnType() != VOID || !function.getArguments().isEmpty()) {
       errors.add(new InvalidMainFunctionSignatureError(main.get().getFirstOccurrence()));
     }
+
+
 
     symbolTable.destroyScope();
   }
@@ -231,6 +236,32 @@ final class SemanticChecker extends RegxBaseListener {
     } else {
       expressionTypes.put(ctx, REGEX);
     }
+  }
+
+  @Override
+  public void enterRegexLiteral(RegxParser.RegexLiteralContext ctx) {
+    String regex = ctx.getText();
+
+    // Trim leading and trailing /
+    regex = regex.substring(1, regex.length() - 1);
+
+    SyntaxErrorListener regexErrorListener = new SyntaxErrorListener();
+
+    RegularExpressionLexer lexer = new RegularExpressionLexer(new ANTLRInputStream(regex));
+
+    lexer.removeErrorListeners();
+    lexer.addErrorListener(regexErrorListener);
+
+    RegularExpressionParser parser = new RegularExpressionParser(new CommonTokenStream(lexer));
+
+    parser.removeErrorListeners();
+    parser.addErrorListener(regexErrorListener);
+
+    parser.start();
+
+    regexErrorListener.getSyntaxErrors().stream()
+        .map(s -> new InvalidRegularExpressionError(s.toString(), fromContext(ctx)))
+        .forEach(errors::add);
   }
 
   @Override
