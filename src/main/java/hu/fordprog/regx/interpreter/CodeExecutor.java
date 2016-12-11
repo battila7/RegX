@@ -28,6 +28,7 @@ import hu.fordprog.regx.grammar.RegxParser.VariableDeclarationContext;
 import hu.fordprog.regx.interpreter.stdlib.RegXList;
 import hu.fordprog.regx.interpreter.symbol.Function;
 import hu.fordprog.regx.interpreter.symbol.FunctionVisitor;
+import hu.fordprog.regx.interpreter.symbol.NativeFunction;
 import hu.fordprog.regx.interpreter.symbol.Symbol;
 import hu.fordprog.regx.interpreter.symbol.SymbolTable;
 import hu.fordprog.regx.interpreter.symbol.SymbolValue;
@@ -173,6 +174,11 @@ public class CodeExecutor implements FunctionVisitor {
   @Override
   public void visit(UserDefinedFunction function) {
     executeFunction(function.getContext());
+  }
+
+  @Override
+  public void visit(NativeFunction function) {
+    function.call(returnStack.peekFirst());
   }
 
   private void executeFunction(FunctionDeclarationContext context) {
