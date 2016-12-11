@@ -56,11 +56,11 @@ public class App {
     /*
      * Remove in release
      */
-    if (DEBUG) {
+    /*if (DEBUG) {
       String str = "function void main(string asd) { a(//);  }";
 
       return new ConstantInputReader(str);
-    }
+    }*/
 
     if (arguments.files.isEmpty()) {
       return new StdinInputReader();

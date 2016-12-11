@@ -8,6 +8,7 @@ import static hu.fordprog.regx.interpreter.symbol.Type.STRING;
 import static hu.fordprog.regx.interpreter.symbol.SymbolValue.from;
 import static hu.fordprog.regx.interpreter.symbol.Type.VOID;
 
+import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ParseTreeProperty;
 
@@ -17,6 +18,7 @@ import java.util.List;
 import java.util.Optional;
 import hu.fordprog.regx.grammar.RegxBaseListener;
 import hu.fordprog.regx.grammar.RegxParser;
+import hu.fordprog.regx.grammar.RegxParser.DeclarationInitializerContext;
 import hu.fordprog.regx.grammar.RegxParser.FunctionCallContext;
 import hu.fordprog.regx.grammar.RegxParser.FunctionDeclarationContext;
 import hu.fordprog.regx.interpreter.error.*;
@@ -76,6 +78,8 @@ final class SemanticChecker extends RegxBaseListener {
 
       symbolTable.addEntry(symbol);
     }
+
+    checkDeclarationType(STRING, ctx.declarationInitializer());
   }
 
   @Override
@@ -85,6 +89,8 @@ final class SemanticChecker extends RegxBaseListener {
 
       symbolTable.addEntry(symbol);
     }
+
+    checkDeclarationType(LIST, ctx.declarationInitializer());
   }
 
   @Override
@@ -93,6 +99,18 @@ final class SemanticChecker extends RegxBaseListener {
       Symbol symbol = new Symbol(ctx.identifier().getText(), REGEX, fromContext(ctx), from(null));
 
       symbolTable.addEntry(symbol);
+    }
+
+    checkDeclarationType(REGEX, ctx.declarationInitializer());
+  }
+
+  private void checkDeclarationType(Type expected, DeclarationInitializerContext declarationCtx) {
+    if (declarationCtx != null) {
+      Type actual = expressionTypes.get(declarationCtx.expression());
+
+      if (actual != expected) {
+        errors.add(new TypeMismatchError(expected, actual, fromContext(declarationCtx)));
+      }
     }
   }
 
@@ -174,6 +192,10 @@ final class SemanticChecker extends RegxBaseListener {
 
   @Override
   public void exitFunctionDeclaration(FunctionDeclarationContext ctx) {
+    if (functions.get(ctx) == null) {
+      return;
+    }
+
     if (functions.get(ctx).getReturnType() != VOID && hasReturnStatement.get(ctx) == null) {
       errors.add(new MissingReturnInFunctionError(ctx.identifier().getText(), fromContext(ctx)));
     }
@@ -307,7 +329,7 @@ final class SemanticChecker extends RegxBaseListener {
       return;
     }
 
-    if (targetType != sourceType) {
+    if (targetType != null && targetType != sourceType) {
       errors.add(new TypeMismatchError(targetType, sourceType, fromContext(ctx)));
     }
   }

@@ -21,19 +21,11 @@ variableDeclaration
   ;
 
 stringDeclaration
-  : STRING identifier stringInitializer? ';'
-  ;
-
-stringInitializer
-  : '=' StringLiteral
+  : STRING identifier declarationInitializer? ';'
   ;
 
 listDeclaration
-  : LIST identifier listInitializer? ';'
-  ;
-
-listInitializer
-  : '=' stringListLiteral
+  : LIST identifier declarationInitializer? ';'
   ;
 
 stringListLiteral
@@ -45,11 +37,11 @@ stringLiteralList
   ;
 
 regexDeclaration
-  : REGEX identifier regexInitializer? ';'
+  : REGEX identifier declarationInitializer? ';'
   ;
 
-regexInitializer
-  : '=' RegexLiteral
+declarationInitializer
+  : '=' expression
   ;
 
 functionDeclaration
@@ -181,5 +173,5 @@ fragment
 LetterOrDigit: [a-zA-Z$_0-9];
 
 WS
-  :  [ \t\r\n\u000C]+ -> skip
+  :  [ \t\r\n\u000C]+ -> channel(HIDDEN)
   ;
