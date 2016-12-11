@@ -283,11 +283,13 @@ public class CodeExecutor implements FunctionVisitor {
     } else if (literal.stringListLiteral() != null) {
       RegXList list = new RegXList();
 
-      literal.stringListLiteral().stringLiteralList().StringLiteral()
-          .stream()
-          .map(TerminalNode::getText)
-          .map(s -> s.substring(1, s.length() - 1))
-          .forEach(list::pushBack);
+      if (literal.stringListLiteral().stringLiteralList() != null) {
+        literal.stringListLiteral().stringLiteralList().StringLiteral()
+            .stream()
+            .map(TerminalNode::getText)
+            .map(s -> s.substring(1, s.length() - 1))
+            .forEach(list::pushBack);
+      }
 
       return list;
     } else {

@@ -370,6 +370,11 @@ final class SemanticChecker extends RegxBaseListener {
 
   @Override
   public void exitForLoop(RegxParser.ForLoopContext ctx) {
+    if (expressionTypes.get(ctx.expression()) != LIST) {
+      errors.add(new InvalidForLoopExpression(fromContext(ctx.expression()),
+                                              expressionTypes.get(ctx.expression())));
+    }
+
     symbolTable.exitScope();
   }
 

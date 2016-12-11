@@ -56,11 +56,13 @@ public class App {
     /*
      * Remove in release
      */
+    /*
     if (DEBUG) {
       String str = "function string cnst() { return \"Hello World!\"; } function void main() { print(cnst());  }";
 
       return new ConstantInputReader(str);
     }
+    */
 
     if (arguments.files.isEmpty()) {
       return new StdinInputReader();

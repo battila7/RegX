@@ -20,6 +20,7 @@ import hu.fordprog.regx.input.InputReaderException;
 import hu.fordprog.regx.interpreter.error.SemanticError;
 import hu.fordprog.regx.interpreter.stdlib.IO;
 import hu.fordprog.regx.interpreter.stdlib.ImplicitDeclarationSource;
+import hu.fordprog.regx.interpreter.stdlib.RegXList;
 import hu.fordprog.regx.interpreter.symbol.Symbol;
 
 public class Interpreter {
@@ -129,7 +130,8 @@ public class Interpreter {
   }
 
   private List<Symbol> createImplicitDeclarations() {
-    List<ImplicitDeclarationSource> sources = Arrays.asList(new IO());
+    List<ImplicitDeclarationSource> sources =
+        Arrays.asList(new IO(), new RegXList.Declarations());
 
     return sources.stream()
         .map(ImplicitDeclarationSource::getDeclarations)
