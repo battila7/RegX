@@ -3,7 +3,7 @@ package hu.fordprog.regx.interpreter.symbol;
 import java.util.List;
 import java.util.function.BiConsumer;
 
-public abstract class NativeFunction extends Function {
+public class NativeFunction extends Function {
   private final java.util.function.Function<List<Symbol>, Object> implementation;
 
   public NativeFunction(List<Symbol> arguments,

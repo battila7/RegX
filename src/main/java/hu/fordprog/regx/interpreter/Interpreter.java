@@ -1,6 +1,7 @@
 package hu.fordprog.regx.interpreter;
 
 import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toList;
 
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -8,6 +9,8 @@ import org.antlr.v4.runtime.TokenStream;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 
 import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import hu.fordprog.regx.grammar.RegxLexer;
@@ -15,6 +18,9 @@ import hu.fordprog.regx.grammar.RegxParser;
 import hu.fordprog.regx.input.InputReader;
 import hu.fordprog.regx.input.InputReaderException;
 import hu.fordprog.regx.interpreter.error.SemanticError;
+import hu.fordprog.regx.interpreter.stdlib.IO;
+import hu.fordprog.regx.interpreter.stdlib.ImplicitDeclarationSource;
+import hu.fordprog.regx.interpreter.symbol.Symbol;
 
 public class Interpreter {
   private InputReader inputReader;
@@ -32,7 +38,7 @@ public class Interpreter {
   }
 
   private Interpreter() {
-    this.semanticChecker = new SemanticChecker();
+    this.semanticChecker = new SemanticChecker(createImplicitDeclarations());
 
     this.syntaxErrorListener = new SyntaxErrorListener();
   }
@@ -120,6 +126,15 @@ public class Interpreter {
     parser.addErrorListener(syntaxErrorListener);
 
     return parser.program();
+  }
+
+  private List<Symbol> createImplicitDeclarations() {
+    List<ImplicitDeclarationSource> sources = Arrays.asList(new IO());
+
+    return sources.stream()
+        .map(ImplicitDeclarationSource::getDeclarations)
+        .flatMap(List::stream)
+        .collect(toList());
   }
 
   public static class Builder {

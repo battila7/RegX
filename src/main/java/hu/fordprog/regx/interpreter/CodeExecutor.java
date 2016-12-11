@@ -1,11 +1,16 @@
 package hu.fordprog.regx.interpreter;
 
+import static java.util.stream.Collectors.*;
+
+import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ParseTreeProperty;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
+import java.util.Collections;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import hu.fordprog.regx.grammar.RegxParser;
 import hu.fordprog.regx.grammar.RegxParser.ArgumentListContext;
@@ -43,7 +48,7 @@ public class CodeExecutor implements FunctionVisitor {
 
   private final ParseTreeProperty<Function> functions;
 
-  private final Deque<SymbolValue> returnStack;
+  private final Deque<CallContext> contextStack;
 
   private final SymbolValue voidSymbolValue;
 
@@ -54,7 +59,7 @@ public class CodeExecutor implements FunctionVisitor {
 
     this.functions = new ParseTreeProperty<>();
 
-    this.returnStack = new LinkedList<>();
+    this.contextStack = new LinkedList<>();
 
     this.voidSymbolValue = SymbolValue.from(null);
   }
@@ -72,11 +77,11 @@ public class CodeExecutor implements FunctionVisitor {
 
     Function function = (Function)symbol.getSymbolValue().getValue();
 
-    returnStack.addFirst(voidSymbolValue);
+    contextStack.addFirst(new CallContext(voidSymbolValue, programCtx));
 
     function.accept(this);
 
-    returnStack.removeFirst();
+    contextStack.removeFirst();
   }
 
   private void assignGlobalVariables() {
@@ -162,13 +167,20 @@ public class CodeExecutor implements FunctionVisitor {
 
     Function function = (Function)symbol.getSymbolValue().getValue();
 
+    List<Object> savedArguments =
+        function.getArguments().stream().map(s -> s.getSymbolValue().getValue()).collect(toList());
+
     setFunctionArguments(function, expression.functionCall().argumentList());
 
-    returnStack.addFirst(target);
+    contextStack.addFirst(new CallContext(target, symbolTable.getCurrentScope()));
 
     function.accept(this);
 
-    returnStack.removeFirst();
+    for (int i = 0; i < savedArguments.size(); ++i) {
+      function.getArguments().get(i).getSymbolValue().setValue(savedArguments.get(i));
+    }
+
+    contextStack.removeFirst();
   }
 
   @Override
@@ -178,7 +190,7 @@ public class CodeExecutor implements FunctionVisitor {
 
   @Override
   public void visit(NativeFunction function) {
-    function.call(returnStack.peekFirst());
+    function.call(contextStack.peekFirst().returnTarget);
   }
 
   private void executeFunction(FunctionDeclarationContext context) {
@@ -186,7 +198,7 @@ public class CodeExecutor implements FunctionVisitor {
 
     executeBlock(context.block());
 
-    symbolTable.exitScope();
+    symbolTable.enterScope(contextStack.peekFirst().scope);
   }
 
   private void executeForLoop(ForLoopContext loop) {
@@ -216,7 +228,8 @@ public class CodeExecutor implements FunctionVisitor {
       if (statement.expression() != null) {
         executeExpression(statement.expression(), voidSymbolValue);
       } else if (statement.returnStatement() != null) {
-        executeExpression(statement.returnStatement().expression(), returnStack.peekFirst());
+        executeExpression(statement.returnStatement().expression(),
+            contextStack.peekFirst().returnTarget);
 
         return true;
       } else if (statement.variableDeclaration() != null) {
@@ -280,6 +293,18 @@ public class CodeExecutor implements FunctionVisitor {
     } else {
       // TODO Return Regex
       return null;
+    }
+  }
+
+  private static class CallContext {
+    private final SymbolValue returnTarget;
+
+    private final ParserRuleContext scope;
+
+    public CallContext(SymbolValue returnTarget, ParserRuleContext scope) {
+      this.returnTarget = returnTarget;
+
+      this.scope = scope;
     }
   }
 }

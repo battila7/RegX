@@ -37,7 +37,9 @@ final class SemanticChecker extends RegxBaseListener {
 
   private final ParseTreeProperty<Boolean> hasReturnStatement;
 
-  public SemanticChecker() {
+  private final List<Symbol> implicitDeclarations;
+
+  public SemanticChecker(List<Symbol> implicitDeclarations) {
     this.errors = new ArrayList<>();
 
     this.functions = new ParseTreeProperty<>();
@@ -45,11 +47,13 @@ final class SemanticChecker extends RegxBaseListener {
     this.expressionTypes = new ParseTreeProperty<>();
 
     this.hasReturnStatement = new ParseTreeProperty<>();
+
+    this.implicitDeclarations = implicitDeclarations;
   }
 
   @Override
   public void enterProgram(RegxParser.ProgramContext ctx) {
-    symbolTable = new SymbolTable(ctx);
+    symbolTable = new SymbolTable(ctx, implicitDeclarations);
   }
 
   @Override

@@ -53,10 +53,11 @@ public class App {
   }
 
   private static InputReader getInput(Arguments arguments) {
+    /*
+     * Remove in release
+     */
     if (DEBUG) {
-      String str = "function string asd() { return \"dsa\"; }\n"
-            + "string b = asd();\n"
-            + "function void main() { }\n";
+      String str = "function string cnst() { return \"Hello World!\"; } function void main() { print(cnst());  }";
 
       return new ConstantInputReader(str);
     }

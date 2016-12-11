@@ -19,7 +19,7 @@ public class SymbolTable {
 
   private TableNode currentNode;
 
-  public SymbolTable(ParserRuleContext rootContext) {
+  public SymbolTable(ParserRuleContext rootContext, List<Symbol> implicitDeclarations) {
     rootNode = new TableNode(NO_PARENT, rootContext);
 
     nodeMap = new IdentityHashMap<>();
@@ -27,6 +27,8 @@ public class SymbolTable {
     nodeMap.put(rootContext, rootNode);
 
     currentNode = rootNode;
+
+    implicitDeclarations.forEach(this::addEntry);
   }
 
   public void enterScope(ParserRuleContext context) {
@@ -39,6 +41,10 @@ public class SymbolTable {
     }
 
     currentNode = currentNode.parentNode;
+  }
+
+  public ParserRuleContext getCurrentScope() {
+    return currentNode.context;
   }
 
   public void addEntry(Symbol symbol) {
