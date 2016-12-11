@@ -1,12 +1,7 @@
 grammar Regx;
 
 program
-  : declarationSequence? EOF
-  ;
-
-declarationSequence
-  : declaration
-  | declarationSequence declaration
+  : declaration* EOF
   ;
 
 declaration

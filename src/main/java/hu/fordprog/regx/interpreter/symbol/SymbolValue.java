@@ -1,21 +1,21 @@
 package hu.fordprog.regx.interpreter.symbol;
 
-public class SymbolValue<T> {
-  private T value;
+public class SymbolValue {
+  private Object value;
 
-  public static <T> SymbolValue<T> from(T value) {
-    return new SymbolValue<>(value);
+  public static SymbolValue from(Object value) {
+    return new SymbolValue(value);
   }
 
-  private SymbolValue(T value) {
+  private SymbolValue(Object value) {
     this.value = value;
   }
 
-  public T getValue() {
+  public Object getValue() {
     return value;
   }
 
-  public void setValue(T value) {
+  public void setValue(Object value) {
     this.value = value;
   }
 }

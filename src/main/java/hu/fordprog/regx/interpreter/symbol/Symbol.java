@@ -9,10 +9,10 @@ public class Symbol {
 
   private final CodePosition firstOccurrence;
 
-  private final SymbolValue<?> symbolValue;
+  private final SymbolValue symbolValue;
 
   public Symbol(String identifier, Type type,
-                CodePosition firstOccurrence, SymbolValue<?> symbolValue) {
+                CodePosition firstOccurrence, SymbolValue symbolValue) {
     this.identifier = identifier;
 
     this.type = type;
@@ -34,7 +34,7 @@ public class Symbol {
     return firstOccurrence;
   }
 
-  public SymbolValue<?> getSymbolValue() {
+  public SymbolValue getSymbolValue() {
     return symbolValue;
   }
 }

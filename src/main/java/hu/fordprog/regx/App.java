@@ -25,7 +25,7 @@ public class App {
     JCommander jCommander = new JCommander(arguments, args);
 
     try {
-      startInterpeter(arguments);
+      startInterpreter(arguments);
     } catch (FileNotFoundException e) {
       System.out.println("Could not open output file: " + e.toString());
 
@@ -33,7 +33,7 @@ public class App {
     }
   }
 
-  private static void startInterpeter(Arguments arguments) throws FileNotFoundException{
+  private static void startInterpreter(Arguments arguments) throws FileNotFoundException{
     Interpreter interpreter =
         Interpreter.builder()
                    .inputReader(getInput(arguments))
@@ -53,14 +53,11 @@ public class App {
   }
 
   private static InputReader getInput(Arguments arguments) {
-    /*
-     * Remove in release
-     */
-    /*if (DEBUG) {
-      String str = "function void main(string asd) { a(//);  }";
+    if (DEBUG) {
+      String str = "string b = \"asd\"; string a = b = \"dsa\";\n\nfunction void main() {  }";
 
       return new ConstantInputReader(str);
-    }*/
+    }
 
     if (arguments.files.isEmpty()) {
       return new StdinInputReader();

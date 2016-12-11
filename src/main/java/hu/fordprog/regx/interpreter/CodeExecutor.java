@@ -6,44 +6,40 @@ import static hu.fordprog.regx.interpreter.symbol.Type.FUNCTION;
 import static hu.fordprog.regx.interpreter.symbol.Type.LIST;
 import static hu.fordprog.regx.interpreter.symbol.Type.REGEX;
 import static hu.fordprog.regx.interpreter.symbol.Type.STRING;
-import static hu.fordprog.regx.interpreter.symbol.Type.VOID;
 
-import org.antlr.v4.runtime.ANTLRInputStream;
-import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ParseTreeProperty;
+import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import hu.fordprog.regx.grammar.RegularExpressionLexer;
-import hu.fordprog.regx.grammar.RegularExpressionParser;
 import hu.fordprog.regx.grammar.RegxBaseListener;
 import hu.fordprog.regx.grammar.RegxParser;
+import hu.fordprog.regx.grammar.RegxParser.AssignmentExpressionContext;
+import hu.fordprog.regx.grammar.RegxParser.DeclarationContext;
+import hu.fordprog.regx.grammar.RegxParser.DeclarationInitializerContext;
+import hu.fordprog.regx.grammar.RegxParser.FunctionDeclarationContext;
+import hu.fordprog.regx.grammar.RegxParser.IdentifierExpressionContext;
+import hu.fordprog.regx.grammar.RegxParser.ListDeclarationContext;
+import hu.fordprog.regx.grammar.RegxParser.LiteralContext;
+import hu.fordprog.regx.grammar.RegxParser.LiteralExpressionContext;
 import hu.fordprog.regx.grammar.RegxParser.ProgramContext;
-import hu.fordprog.regx.interpreter.error.ArgumentTypeMismatchError;
-import hu.fordprog.regx.interpreter.error.AssignmentFromVoidFunctionError;
-import hu.fordprog.regx.interpreter.error.AssignmentToFunctionError;
-import hu.fordprog.regx.interpreter.error.FunctionCallExpectedError;
-import hu.fordprog.regx.interpreter.error.IdentifierAlreadyDeclaredError;
-import hu.fordprog.regx.interpreter.error.InvalidMainFunctionSignatureError;
-import hu.fordprog.regx.interpreter.error.InvalidRegularExpressionError;
-import hu.fordprog.regx.interpreter.error.MissingMainFunctionError;
-import hu.fordprog.regx.interpreter.error.MissingReturnInFunctionError;
-import hu.fordprog.regx.interpreter.error.ReturnFromVoidFunctionError;
-import hu.fordprog.regx.interpreter.error.ReturnTypeMismatchError;
-import hu.fordprog.regx.interpreter.error.SemanticError;
-import hu.fordprog.regx.interpreter.error.TypeMismatchError;
-import hu.fordprog.regx.interpreter.error.UndeclaredIdentifierError;
-import hu.fordprog.regx.interpreter.error.WrongNumberOfArgumentsError;
+
+import hu.fordprog.regx.grammar.RegxParser.RegexDeclarationContext;
+import hu.fordprog.regx.grammar.RegxParser.StringDeclarationContext;
+import hu.fordprog.regx.grammar.RegxParser.VariableDeclarationContext;
+import hu.fordprog.regx.interpreter.stdlib.RegXList;
 import hu.fordprog.regx.interpreter.symbol.Function;
 import hu.fordprog.regx.interpreter.symbol.Symbol;
 import hu.fordprog.regx.interpreter.symbol.SymbolTable;
+import hu.fordprog.regx.interpreter.symbol.SymbolValue;
 import hu.fordprog.regx.interpreter.symbol.Type;
 import hu.fordprog.regx.interpreter.symbol.UserDefinedFunction;
 
 public class CodeExecutor extends RegxBaseListener {
+  private static final String DEFAULT_STRING_VALUE = "";
+
   private final ProgramContext programCtx;
 
   private final SymbolTable symbolTable;
@@ -59,7 +55,129 @@ public class CodeExecutor extends RegxBaseListener {
   }
 
   public void execute() {
+    symbolTable.enterScope(programCtx);
 
+    assignGlobalVariables();
+  }
+
+  private void assignGlobalVariables() {
+    for (DeclarationContext declaration : programCtx.declaration()) {
+      FunctionDeclarationContext functionCtx = declaration.functionDeclaration();
+
+      if (functionCtx != null) {
+        if (functionCtx.identifier().getText().equals("main")) {
+          break;
+        } else {
+          continue;
+        }
+      }
+
+      processVariableDeclaration(declaration.variableDeclaration());
+    }
+  }
+
+  private void processVariableDeclaration(VariableDeclarationContext declaration) {
+    if (declaration.stringDeclaration() != null) {
+      processStringDeclaration(declaration.stringDeclaration());
+    } else if (declaration.listDeclaration() != null) {
+      processListDeclaration(declaration.listDeclaration());
+    } else {
+      processRegexDeclaration(declaration.regexDeclaration());
+    }
+  }
+
+  private void processStringDeclaration(StringDeclarationContext declaration) {
+    Symbol symbol = symbolTable.getEntry(declaration.identifier().getText()).get();
+
+    DeclarationInitializerContext initializer = declaration.declarationInitializer();
+
+    if (initializer == null) {
+      symbol.getSymbolValue().setValue(DEFAULT_STRING_VALUE);
+    } else {
+      executeExpression(initializer.expression(), symbol.getSymbolValue());
+    }
+  }
+
+  private void processListDeclaration(ListDeclarationContext declaration) {
+    Symbol symbol = symbolTable.getEntry(declaration.identifier().getText()).get();
+
+    DeclarationInitializerContext initializer = declaration.declarationInitializer();
+
+    if (initializer == null) {
+      symbol.getSymbolValue().setValue(new RegXList());
+    } else {
+      executeExpression(initializer.expression(), symbol.getSymbolValue());
+    }
+  }
+
+  private void processRegexDeclaration(RegexDeclarationContext declaration) {
+    Symbol symbol = symbolTable.getEntry(declaration.identifier().getText()).get();
+
+    DeclarationInitializerContext initializer = declaration.declarationInitializer();
+
+    if (initializer == null) {
+      // TODO Assign empty regex tree
+      symbol.getSymbolValue().setValue(null);
+    } else {
+      executeExpression(initializer.expression(), symbol.getSymbolValue());
+    }
+  }
+
+  private void executeExpression(RegxParser.ExpressionContext expression, SymbolValue target) {
+    if (expression instanceof IdentifierExpressionContext) {
+      executeIdentifierExpression((IdentifierExpressionContext)expression, target);
+    } else if (expression instanceof LiteralExpressionContext) {
+      executeLiteralExpression((LiteralExpressionContext)expression, target);
+    } else if (expression instanceof AssignmentExpressionContext) {
+      executeAssignmentExpression((AssignmentExpressionContext)expression, target);
+    } else {
+      // TODO function call
+    }
+  }
+
+  private void executeAssignmentExpression(AssignmentExpressionContext expression,
+                                           SymbolValue target) {
+    String identifier = expression.assignment().identifier().getText();
+
+    Symbol symbol = symbolTable.getEntry(identifier).get();
+
+    executeExpression(expression.assignment().expression(), symbol.getSymbolValue());
+
+    target.setValue(symbol.getSymbolValue().getValue());
+  }
+
+  private void executeIdentifierExpression(IdentifierExpressionContext expression,
+                                           SymbolValue target) {
+    Symbol source = symbolTable.getEntry(expression.identifier().getText()).get();
+
+    target.setValue(source.getSymbolValue().getValue());
+  }
+
+
+  private void executeLiteralExpression(LiteralExpressionContext expression, SymbolValue target) {
+    target.setValue(getLiteralValue(expression.literal()));
+  }
+
+  private Object getLiteralValue(LiteralContext literal) {
+    if (literal.stringLiteral() != null) {
+      String str = literal.stringLiteral().getText();
+
+      // Trim leading and trailing double quotes
+      return str.substring(1, str.length() - 1);
+    } else if (literal.stringListLiteral() != null) {
+      RegXList list = new RegXList();
+
+      literal.stringListLiteral().stringLiteralList().StringLiteral()
+          .stream()
+          .map(TerminalNode::getText)
+          .map(s -> s.substring(1, s.length() - 1))
+          .forEach(list::pushBack);
+
+      return list;
+    } else {
+      // TODO Return Regex
+      return null;
+    }
   }
 
   @Override
@@ -75,28 +193,28 @@ public class CodeExecutor extends RegxBaseListener {
   }
 
   @Override
-  public void exitStringDeclaration(RegxParser.StringDeclarationContext ctx) {
+  public void exitStringDeclaration(StringDeclarationContext ctx) {
     Symbol symbol = new Symbol(ctx.identifier().getText(), STRING, fromContext(ctx), from(null));
 
     symbolTable.addEntry(symbol);
   }
 
   @Override
-  public void exitListDeclaration(RegxParser.ListDeclarationContext ctx) {
+  public void exitListDeclaration(ListDeclarationContext ctx) {
     Symbol symbol = new Symbol(ctx.identifier().getText(), LIST, fromContext(ctx), from(null));
 
     symbolTable.addEntry(symbol);
   }
 
   @Override
-  public void exitRegexDeclaration(RegxParser.RegexDeclarationContext ctx) {
+  public void exitRegexDeclaration(RegexDeclarationContext ctx) {
     Symbol symbol = new Symbol(ctx.identifier().getText(), REGEX, fromContext(ctx), from(null));
 
     symbolTable.addEntry(symbol);
   }
 
   @Override
-  public void enterFunctionDeclaration(RegxParser.FunctionDeclarationContext ctx) {
+  public void enterFunctionDeclaration(FunctionDeclarationContext ctx) {
     addFunctionSymbol(ctx);
 
     symbolTable.enterScope(ctx);
@@ -104,7 +222,7 @@ public class CodeExecutor extends RegxBaseListener {
     parseFunctionArguments(ctx).forEach(symbolTable::addEntry);
   }
 
-  private void addFunctionSymbol(RegxParser.FunctionDeclarationContext ctx) {
+  private void addFunctionSymbol(FunctionDeclarationContext ctx) {
     Type returnType = Type.valueOf(ctx.returnType().getText().toUpperCase());
 
     UserDefinedFunction function =
@@ -116,7 +234,7 @@ public class CodeExecutor extends RegxBaseListener {
         new Symbol(ctx.identifier().getText(), FUNCTION, fromContext(ctx), from(function)));
   }
 
-  private List<Symbol> parseFunctionArguments(RegxParser.FunctionDeclarationContext ctx) {
+  private List<Symbol> parseFunctionArguments(FunctionDeclarationContext ctx) {
     if (ctx.formalParameterList() == null) {
       return Collections.emptyList();
     }
@@ -135,7 +253,7 @@ public class CodeExecutor extends RegxBaseListener {
   }
 
   @Override
-  public void exitFunctionDeclaration(RegxParser.FunctionDeclarationContext ctx) {
+  public void exitFunctionDeclaration(FunctionDeclarationContext ctx) {
     if (functions.get(ctx) == null) {
       return;
     }

@@ -22,7 +22,6 @@ import hu.fordprog.regx.grammar.RegularExpressionParser;
 import hu.fordprog.regx.grammar.RegxBaseListener;
 import hu.fordprog.regx.grammar.RegxParser;
 import hu.fordprog.regx.grammar.RegxParser.DeclarationInitializerContext;
-import hu.fordprog.regx.grammar.RegxParser.FunctionCallContext;
 import hu.fordprog.regx.grammar.RegxParser.FunctionDeclarationContext;
 import hu.fordprog.regx.interpreter.error.*;
 import hu.fordprog.regx.interpreter.symbol.*;
