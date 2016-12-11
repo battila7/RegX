@@ -1,5 +1,7 @@
 package hu.fordprog.regx.interpreter;
 
+import static java.util.stream.Collectors.joining;
+
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.TokenStream;
@@ -8,12 +10,14 @@ import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.w3c.dom.traversal.TreeWalker;
 
 import java.io.PrintWriter;
+import java.util.List;
 import java.util.Objects;
 import hu.fordprog.regx.grammar.RegxLexer;
 import hu.fordprog.regx.grammar.RegxParser;
 import hu.fordprog.regx.input.InputReader;
 import hu.fordprog.regx.input.InputReaderException;
 import hu.fordprog.regx.input.StdinInputReader;
+import hu.fordprog.regx.interpreter.error.SemanticError;
 
 public class Interpreter {
   private InputReader inputReader;
@@ -39,15 +43,33 @@ public class Interpreter {
       outputWriter.write("Could not read input: " + e);
     }
 
-    checkSemantics(parseTree);
+    if (checkSemantics(parseTree)) {
+
+    }
   }
 
-  private void checkSemantics(ParseTree parseTree) {
+  private boolean checkSemantics(ParseTree parseTree) {
     SemanticChecker semanticChecker = new SemanticChecker();
 
     ParseTreeWalker.DEFAULT.walk(semanticChecker, parseTree);
 
-    outputWriter.println(semanticChecker.getErrors());
+    List<SemanticError> semanticErrors = semanticChecker.getErrors();
+
+    if (!semanticErrors.isEmpty()) {
+      printSemanticErrors(semanticErrors);
+    }
+
+    return semanticErrors.isEmpty();
+  }
+
+  private void printSemanticErrors(List<SemanticError> semanticErrors) {
+    outputWriter.printf("Found %d errors when checking your code:\n\n", semanticErrors.size());
+
+    String errorOut = semanticErrors.stream()
+        .map(SemanticError::getMessage)
+        .collect(joining("\n\n"));
+
+    outputWriter.println(errorOut);
   }
 
   private ParseTree obtainParseTree() throws InputReaderException {
