@@ -9,7 +9,6 @@ import static hu.fordprog.regx.interpreter.symbol.SymbolValue.from;
 import static hu.fordprog.regx.interpreter.symbol.Type.VOID;
 
 import org.antlr.v4.runtime.ParserRuleContext;
-import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.ParseTreeProperty;
 
 import java.util.ArrayList;
@@ -141,8 +140,8 @@ final class SemanticChecker extends RegxBaseListener {
 
     Type sourceType = expressionTypes.get(ctx.expression());
 
-    if (targetType != sourceType) {
-      errors.add(new ReturnTypeMismatch(functionCtx.identifier().getText(),
+    if (targetType != VOID && targetType != sourceType) {
+      errors.add(new ReturnTypeMismatchError(functionCtx.identifier().getText(),
           targetType, sourceType, fromContext(ctx)));
     }
   }
@@ -211,6 +210,46 @@ final class SemanticChecker extends RegxBaseListener {
 
     expressionTypes.put(ctx, function.getReturnType());
   }
+
+  @Override
+  public void exitFunctionCallExpression(RegxParser.FunctionCallExpressionContext ctx) {
+    String functionIdentifier = ctx.functionCall().identifier().getText();
+
+    Symbol functionSymbol = symbolTable.getEntry(functionIdentifier).get();
+
+    checkFormalAndActualParameters(ctx, functionSymbol);
+  }
+
+  private void checkFormalAndActualParameters(RegxParser.FunctionCallExpressionContext ctx,
+                                              Symbol functionSymbol) {
+    RegxParser.ArgumentListContext argCtx = ctx.functionCall().argumentList();
+
+    if (argCtx == null) {
+      return;
+    }
+
+    Function function = (Function)functionSymbol.getSymbolValue().getValue();
+
+    int expected = function.getArguments().size();
+
+    int actual = argCtx.argument().size();
+
+    if (expected != actual) {
+      errors.add(new WrongNumberOfArgumentsError(expected, actual, fromContext(ctx)));
+    }
+
+    for (int i = 0; i < Math.min(expected, actual); ++i) {
+      Type targetType = function.getReturnType();
+
+      Type sourceType = expressionTypes.get(argCtx.argument(i).expression());
+
+      if (targetType != sourceType) {
+        errors.add(new ArgumentTypeMismatchError(ctx.functionCall().identifier().getText(),
+            i + 1, targetType, sourceType, fromContext(argCtx.argument(i))));
+      }
+    }
+  }
+
 
   @Override
   public void enterAssignmentExpression(RegxParser.AssignmentExpressionContext ctx) {
