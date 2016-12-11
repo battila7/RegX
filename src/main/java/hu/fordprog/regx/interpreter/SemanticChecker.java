@@ -292,13 +292,7 @@ final class SemanticChecker extends RegxBaseListener {
 
     int expected = function.getArguments().size();
 
-    if (argCtx == null && expected > 0) {
-      errors.add(new WrongNumberOfArgumentsError(expected, 0, fromContext(ctx)));
-
-      return;
-    }
-
-    int actual = argCtx.argument().size();
+    int actual = (argCtx == null) ? 0 : argCtx.argument().size();
 
     if (expected != actual) {
       errors.add(new WrongNumberOfArgumentsError(expected, actual, fromContext(ctx)));

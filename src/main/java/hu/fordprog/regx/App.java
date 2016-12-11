@@ -54,7 +54,9 @@ public class App {
 
   private static InputReader getInput(Arguments arguments) {
     if (DEBUG) {
-      String str = "string b = \"asd\"; string a = b = \"dsa\";\n\nfunction void main() {  }";
+      String str = "function string asd() { return \"dsa\"; }\n"
+            + "string b = asd();\n"
+            + "function void main() { }\n";
 
       return new ConstantInputReader(str);
     }

@@ -1,5 +1,5 @@
 package hu.fordprog.regx.interpreter.symbol;
 
-interface FunctionVisitor {
+public interface FunctionVisitor {
   void visit(UserDefinedFunction function);
 }

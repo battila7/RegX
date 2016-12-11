@@ -1,24 +1,20 @@
 package hu.fordprog.regx.interpreter;
 
-import static hu.fordprog.regx.interpreter.CodePosition.fromContext;
-import static hu.fordprog.regx.interpreter.symbol.SymbolValue.from;
-import static hu.fordprog.regx.interpreter.symbol.Type.FUNCTION;
-import static hu.fordprog.regx.interpreter.symbol.Type.LIST;
-import static hu.fordprog.regx.interpreter.symbol.Type.REGEX;
-import static hu.fordprog.regx.interpreter.symbol.Type.STRING;
-
 import org.antlr.v4.runtime.tree.ParseTreeProperty;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Deque;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.Optional;
-import hu.fordprog.regx.grammar.RegxBaseListener;
+
 import hu.fordprog.regx.grammar.RegxParser;
+import hu.fordprog.regx.grammar.RegxParser.ArgumentListContext;
 import hu.fordprog.regx.grammar.RegxParser.AssignmentExpressionContext;
+import hu.fordprog.regx.grammar.RegxParser.BlockContext;
 import hu.fordprog.regx.grammar.RegxParser.DeclarationContext;
 import hu.fordprog.regx.grammar.RegxParser.DeclarationInitializerContext;
+import hu.fordprog.regx.grammar.RegxParser.ForLoopContext;
+import hu.fordprog.regx.grammar.RegxParser.FunctionCallExpressionContext;
 import hu.fordprog.regx.grammar.RegxParser.FunctionDeclarationContext;
 import hu.fordprog.regx.grammar.RegxParser.IdentifierExpressionContext;
 import hu.fordprog.regx.grammar.RegxParser.ListDeclarationContext;
@@ -31,13 +27,13 @@ import hu.fordprog.regx.grammar.RegxParser.StringDeclarationContext;
 import hu.fordprog.regx.grammar.RegxParser.VariableDeclarationContext;
 import hu.fordprog.regx.interpreter.stdlib.RegXList;
 import hu.fordprog.regx.interpreter.symbol.Function;
+import hu.fordprog.regx.interpreter.symbol.FunctionVisitor;
 import hu.fordprog.regx.interpreter.symbol.Symbol;
 import hu.fordprog.regx.interpreter.symbol.SymbolTable;
 import hu.fordprog.regx.interpreter.symbol.SymbolValue;
-import hu.fordprog.regx.interpreter.symbol.Type;
 import hu.fordprog.regx.interpreter.symbol.UserDefinedFunction;
 
-public class CodeExecutor extends RegxBaseListener {
+public class CodeExecutor implements FunctionVisitor {
   private static final String DEFAULT_STRING_VALUE = "";
 
   private final ProgramContext programCtx;
@@ -46,18 +42,40 @@ public class CodeExecutor extends RegxBaseListener {
 
   private final ParseTreeProperty<Function> functions;
 
+  private final Deque<SymbolValue> returnStack;
+
+  private final SymbolValue voidSymbolValue;
+
   public CodeExecutor(SymbolTable symbolTable, ProgramContext programCtx) {
     this.programCtx = programCtx;
 
     this.symbolTable = symbolTable;
 
     this.functions = new ParseTreeProperty<>();
+
+    this.returnStack = new LinkedList<>();
+
+    this.voidSymbolValue = SymbolValue.from(null);
   }
 
   public void execute() {
     symbolTable.enterScope(programCtx);
 
     assignGlobalVariables();
+
+    executeMain();
+  }
+
+  private void executeMain() {
+    Symbol symbol = symbolTable.getEntry("main").get();
+
+    Function function = (Function)symbol.getSymbolValue().getValue();
+
+    returnStack.addFirst(voidSymbolValue);
+
+    function.accept(this);
+
+    returnStack.removeFirst();
   }
 
   private void assignGlobalVariables() {
@@ -131,7 +149,86 @@ public class CodeExecutor extends RegxBaseListener {
     } else if (expression instanceof AssignmentExpressionContext) {
       executeAssignmentExpression((AssignmentExpressionContext)expression, target);
     } else {
-      // TODO function call
+      executeFunctionCallExpression((FunctionCallExpressionContext)expression, target);
+    }
+  }
+
+  private void executeFunctionCallExpression(FunctionCallExpressionContext expression,
+                                             SymbolValue target) {
+    String identifier = expression.functionCall().identifier().getText();
+
+    Symbol symbol = symbolTable.getEntry(identifier).get();
+
+    Function function = (Function)symbol.getSymbolValue().getValue();
+
+    setFunctionArguments(function, expression.functionCall().argumentList());
+
+    returnStack.addFirst(target);
+
+    function.accept(this);
+
+    returnStack.removeFirst();
+  }
+
+  @Override
+  public void visit(UserDefinedFunction function) {
+    executeFunction(function.getContext());
+  }
+
+  private void executeFunction(FunctionDeclarationContext context) {
+    symbolTable.enterScope(context);
+
+    executeBlock(context.block());
+
+    symbolTable.exitScope();
+  }
+
+  private void executeForLoop(ForLoopContext loop) {
+    SymbolValue collection = SymbolValue.from(null);
+
+    executeExpression(loop.expression(), collection);
+
+    symbolTable.enterScope(loop);
+
+    Symbol loopVariable = symbolTable.getEntry(loop.identifier().getText()).get();
+
+    RegXList list = (RegXList)collection.getValue();
+
+    for (String str : list) {
+      loopVariable.getSymbolValue().setValue(str);
+
+      if (executeBlock(loop.block())) {
+        break;
+      }
+    }
+
+    symbolTable.exitScope();
+  }
+
+  private boolean executeBlock(BlockContext block) {
+    for (RegxParser.StatementContext statement : block.statement()) {
+      if (statement.expression() != null) {
+        executeExpression(statement.expression(), voidSymbolValue);
+      } else if (statement.returnStatement() != null) {
+        executeExpression(statement.returnStatement().expression(), returnStack.peekFirst());
+
+        return true;
+      } else if (statement.variableDeclaration() != null) {
+        processVariableDeclaration(statement.variableDeclaration());
+      } else if (statement.forLoop() != null) {
+        executeForLoop(statement.forLoop());
+      }
+    }
+
+    return false;
+  }
+
+  private void setFunctionArguments(Function function, ArgumentListContext arguments) {
+    List<Symbol> functionArguments = function.getArguments();
+
+    for (int i = 0; i < functionArguments.size(); ++i) {
+      executeExpression(arguments.argument(i).expression(),
+                        functionArguments.get(i).getSymbolValue());
     }
   }
 
@@ -178,100 +275,5 @@ public class CodeExecutor extends RegxBaseListener {
       // TODO Return Regex
       return null;
     }
-  }
-
-  @Override
-  public void enterProgram(RegxParser.ProgramContext ctx) {
-    symbolTable.enterScope(ctx);
-  }
-
-  @Override
-  public void exitProgram(RegxParser.ProgramContext ctx) {
-    Optional<Symbol> main = symbolTable.getEntry("main");
-
-    symbolTable.exitScope();
-  }
-
-  @Override
-  public void exitStringDeclaration(StringDeclarationContext ctx) {
-    Symbol symbol = new Symbol(ctx.identifier().getText(), STRING, fromContext(ctx), from(null));
-
-    symbolTable.addEntry(symbol);
-  }
-
-  @Override
-  public void exitListDeclaration(ListDeclarationContext ctx) {
-    Symbol symbol = new Symbol(ctx.identifier().getText(), LIST, fromContext(ctx), from(null));
-
-    symbolTable.addEntry(symbol);
-  }
-
-  @Override
-  public void exitRegexDeclaration(RegexDeclarationContext ctx) {
-    Symbol symbol = new Symbol(ctx.identifier().getText(), REGEX, fromContext(ctx), from(null));
-
-    symbolTable.addEntry(symbol);
-  }
-
-  @Override
-  public void enterFunctionDeclaration(FunctionDeclarationContext ctx) {
-    addFunctionSymbol(ctx);
-
-    symbolTable.enterScope(ctx);
-
-    parseFunctionArguments(ctx).forEach(symbolTable::addEntry);
-  }
-
-  private void addFunctionSymbol(FunctionDeclarationContext ctx) {
-    Type returnType = Type.valueOf(ctx.returnType().getText().toUpperCase());
-
-    UserDefinedFunction function =
-        new UserDefinedFunction(parseFunctionArguments(ctx), returnType, ctx);
-
-    functions.put(ctx, function);
-
-    symbolTable.addEntry(
-        new Symbol(ctx.identifier().getText(), FUNCTION, fromContext(ctx), from(function)));
-  }
-
-  private List<Symbol> parseFunctionArguments(FunctionDeclarationContext ctx) {
-    if (ctx.formalParameterList() == null) {
-      return Collections.emptyList();
-    }
-
-    List<Symbol> symbols = new ArrayList<>();
-
-    for (RegxParser.FormalParameterContext paramCtx : ctx.formalParameterList().formalParameter()) {
-      Symbol s = new Symbol(paramCtx.identifier().getText(),
-          Type.valueOf(paramCtx.typeName().getText().toUpperCase()),
-          fromContext(paramCtx), from(null));
-
-      symbols.add(s);
-    }
-
-    return symbols;
-  }
-
-  @Override
-  public void exitFunctionDeclaration(FunctionDeclarationContext ctx) {
-    if (functions.get(ctx) == null) {
-      return;
-    }
-
-    symbolTable.exitScope();
-  }
-
-  @Override
-  public void enterForLoop(RegxParser.ForLoopContext ctx) {
-    symbolTable.enterScope(ctx);
-
-    Symbol symbol = new Symbol(ctx.identifier().getText(), STRING, fromContext(ctx), from(null));
-
-    symbolTable.addEntry(symbol);
-  }
-
-  @Override
-  public void exitForLoop(RegxParser.ForLoopContext ctx) {
-    symbolTable.exitScope();
   }
 }
