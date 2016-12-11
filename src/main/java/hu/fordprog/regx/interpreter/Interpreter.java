@@ -5,9 +5,7 @@ import static java.util.stream.Collectors.joining;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.TokenStream;
-import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
-import org.w3c.dom.traversal.TreeWalker;
 
 import java.io.PrintWriter;
 import java.util.List;
@@ -16,7 +14,6 @@ import hu.fordprog.regx.grammar.RegxLexer;
 import hu.fordprog.regx.grammar.RegxParser;
 import hu.fordprog.regx.input.InputReader;
 import hu.fordprog.regx.input.InputReaderException;
-import hu.fordprog.regx.input.StdinInputReader;
 import hu.fordprog.regx.interpreter.error.SemanticError;
 
 public class Interpreter {
@@ -28,16 +25,20 @@ public class Interpreter {
 
   private final SyntaxErrorListener syntaxErrorListener;
 
+  private final SemanticChecker semanticChecker;
+
   public static Builder builder() {
     return new Builder();
   }
 
   private Interpreter() {
+    this.semanticChecker = new SemanticChecker();
+
     this.syntaxErrorListener = new SyntaxErrorListener();
   }
 
   public void interpret() {
-    ParseTree parseTree = null;
+    RegxParser.ProgramContext parseTree = null;
 
     try {
       parseTree = obtainParseTree();
@@ -53,6 +54,10 @@ public class Interpreter {
 
       return;
     }
+
+    CodeExecutor codeExecutor = new CodeExecutor(semanticChecker.getSymbolTable(), parseTree);
+
+    codeExecutor.execute();
   }
 
   private boolean checkSyntax() {
@@ -77,9 +82,7 @@ public class Interpreter {
     outputWriter.println(errorOut);
   }
 
-  private boolean checkSemantics(ParseTree parseTree) {
-    SemanticChecker semanticChecker = new SemanticChecker();
-
+  private boolean checkSemantics(RegxParser.ProgramContext parseTree) {
     ParseTreeWalker.DEFAULT.walk(semanticChecker, parseTree);
 
     List<SemanticError> semanticErrors = semanticChecker.getErrors();
@@ -101,7 +104,7 @@ public class Interpreter {
     outputWriter.println(errorOut);
   }
 
-  private ParseTree obtainParseTree() throws InputReaderException {
+  private RegxParser.ProgramContext obtainParseTree() throws InputReaderException {
     String input = inputReader.readInput();
 
     RegxLexer lexer = new RegxLexer(new ANTLRInputStream(input));

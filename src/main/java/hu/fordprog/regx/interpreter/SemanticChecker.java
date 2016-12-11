@@ -28,7 +28,7 @@ import hu.fordprog.regx.interpreter.error.*;
 import hu.fordprog.regx.interpreter.symbol.*;
 
 final class SemanticChecker extends RegxBaseListener {
-  private final SymbolTable symbolTable;
+  private SymbolTable symbolTable;
 
   private final List<SemanticError> errors;
 
@@ -39,8 +39,6 @@ final class SemanticChecker extends RegxBaseListener {
   private final ParseTreeProperty<Boolean> hasReturnStatement;
 
   public SemanticChecker() {
-    this.symbolTable = new SymbolTable();
-
     this.errors = new ArrayList<>();
 
     this.functions = new ParseTreeProperty<>();
@@ -52,7 +50,7 @@ final class SemanticChecker extends RegxBaseListener {
 
   @Override
   public void enterProgram(RegxParser.ProgramContext ctx) {
-    symbolTable.newScope();
+    symbolTable = new SymbolTable(ctx);
   }
 
   @Override
@@ -70,10 +68,6 @@ final class SemanticChecker extends RegxBaseListener {
     if (function.getReturnType() != VOID || !function.getArguments().isEmpty()) {
       errors.add(new InvalidMainFunctionSignatureError(main.get().getFirstOccurrence()));
     }
-
-
-
-    symbolTable.destroyScope();
   }
 
   @Override
@@ -125,7 +119,7 @@ final class SemanticChecker extends RegxBaseListener {
       addFunctionSymbol(ctx);
     }
 
-    symbolTable.newScope();
+    symbolTable.enterScope(ctx);
 
     parseFunctionArguments(ctx).forEach(symbolTable::addEntry);
   }
@@ -205,7 +199,7 @@ final class SemanticChecker extends RegxBaseListener {
       errors.add(new MissingReturnInFunctionError(ctx.identifier().getText(), fromContext(ctx)));
     }
 
-    symbolTable.destroyScope();
+    symbolTable.exitScope();
   }
 
   @Override
@@ -351,10 +345,11 @@ final class SemanticChecker extends RegxBaseListener {
     Type sourceType = expressionTypes.get(ctx.assignment().expression());
 
     if (sourceType == VOID) {
-      FunctionCallContext functionCtx =
-          (FunctionCallContext)ctx.assignment().expression().getRuleContext();
+      RegxParser.FunctionCallExpressionContext functionCtx =
+          (RegxParser.FunctionCallExpressionContext) ctx.assignment().expression();
 
-      Symbol functionSymbol = symbolTable.getEntry(functionCtx.identifier().getText()).get();
+      Symbol functionSymbol =
+          symbolTable.getEntry(functionCtx.functionCall().identifier().getText()).get();
 
       errors.add(new AssignmentFromVoidFunctionError(functionSymbol.getIdentifier(),
           functionSymbol.getFirstOccurrence(), fromContext(ctx)));
@@ -369,7 +364,7 @@ final class SemanticChecker extends RegxBaseListener {
 
   @Override
   public void enterForLoop(RegxParser.ForLoopContext ctx) {
-    symbolTable.newScope();
+    symbolTable.enterScope(ctx);
 
     Symbol symbol = new Symbol(ctx.identifier().getText(), STRING, fromContext(ctx), from(null));
 
@@ -378,11 +373,15 @@ final class SemanticChecker extends RegxBaseListener {
 
   @Override
   public void exitForLoop(RegxParser.ForLoopContext ctx) {
-    symbolTable.destroyScope();
+    symbolTable.exitScope();
   }
 
   public List<SemanticError> getErrors() {
     return Collections.unmodifiableList(errors);
+  }
+
+  public SymbolTable getSymbolTable() {
+    return symbolTable;
   }
 
   private boolean checkIfDeclarationIsUnique(RegxParser.IdentifierContext ctx) {
