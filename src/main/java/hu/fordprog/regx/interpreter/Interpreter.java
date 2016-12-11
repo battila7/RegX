@@ -26,12 +26,14 @@ public class Interpreter {
 
   private boolean verbose;
 
+  private final SyntaxErrorListener syntaxErrorListener;
+
   public static Builder builder() {
     return new Builder();
   }
 
   private Interpreter() {
-
+    this.syntaxErrorListener = new SyntaxErrorListener();
   }
 
   public void interpret() {
@@ -40,12 +42,39 @@ public class Interpreter {
     try {
       parseTree = obtainParseTree();
     } catch (InputReaderException e) {
-      outputWriter.write("Could not read input: " + e);
+      outputWriter.println("Could not read input: " + e);
     }
 
-    if (checkSemantics(parseTree)) {
+    boolean syntacticResult = checkSyntax();
+    boolean semanticResult = checkSemantics(parseTree);
 
+    if (!(syntacticResult && semanticResult)) {
+      outputWriter.println("\n\nAborting because of the listed syntactic/semantic errors...");
+
+      return;
     }
+  }
+
+  private boolean checkSyntax() {
+    List<SyntaxError> syntaxErrors = syntaxErrorListener.getSyntaxErrors();
+
+    if (syntaxErrors.isEmpty()) {
+      return true;
+    }
+
+    printSyntaxErrors(syntaxErrors);
+
+    return false;
+  }
+
+  private void printSyntaxErrors(List<SyntaxError> syntaxErrors) {
+    outputWriter.printf("Found %d syntax errors while parsing your code:\n\n", syntaxErrors.size());
+
+    String errorOut = syntaxErrors.stream()
+        .map(SyntaxError::toString)
+        .collect(joining("\n\n"));
+
+    outputWriter.println(errorOut);
   }
 
   private boolean checkSemantics(ParseTree parseTree) {
@@ -63,7 +92,7 @@ public class Interpreter {
   }
 
   private void printSemanticErrors(List<SemanticError> semanticErrors) {
-    outputWriter.printf("Found %d errors when checking your code:\n\n", semanticErrors.size());
+    outputWriter.printf("\nFound %d errors when checking the semantics:\n\n", semanticErrors.size());
 
     String errorOut = semanticErrors.stream()
         .map(SemanticError::getMessage)
@@ -77,9 +106,15 @@ public class Interpreter {
 
     RegxLexer lexer = new RegxLexer(new ANTLRInputStream(input));
 
+    lexer.removeErrorListeners();
+    lexer.addErrorListener(syntaxErrorListener);
+
     TokenStream tokenStream = new CommonTokenStream(lexer);
 
     RegxParser parser = new RegxParser(tokenStream);
+
+    parser.removeErrorListeners();
+    parser.addErrorListener(syntaxErrorListener);
 
     return parser.program();
   }
