@@ -52,6 +52,20 @@ final class SemanticChecker extends RegxBaseListener {
 
   @Override
   public void exitProgram(RegxParser.ProgramContext ctx) {
+    Optional<Symbol> main = symbolTable.getEntry("main");
+
+    if (!main.isPresent() || main.get().getType() != FUNCTION) {
+      errors.add(new MissingMainFunctionError(fromContext(ctx)));
+
+      return;
+    }
+
+    Function function = (Function)main.get().getSymbolValue().getValue();
+
+    if (function.getReturnType() != VOID || !function.getArguments().isEmpty()) {
+      errors.add(new InvalidMainFunctionSignatureError(main.get().getFirstOccurrence()));
+    }
+
     symbolTable.destroyScope();
   }
 
@@ -89,6 +103,8 @@ final class SemanticChecker extends RegxBaseListener {
     }
 
     symbolTable.newScope();
+
+    parseFunctionArguments(ctx).forEach(symbolTable::addEntry);
   }
 
   private void addFunctionSymbol(FunctionDeclarationContext ctx) {
@@ -239,7 +255,7 @@ final class SemanticChecker extends RegxBaseListener {
     }
 
     for (int i = 0; i < Math.min(expected, actual); ++i) {
-      Type targetType = function.getReturnType();
+      Type targetType = function.getArguments().get(i).getType();
 
       Type sourceType = expressionTypes.get(argCtx.argument(i).expression());
 

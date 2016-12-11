@@ -57,7 +57,7 @@ public class App {
      * Remove in release
      */
     if (DEBUG) {
-      String str = "function void a() { return //;  }";
+      String str = "function void a(string asd) { a(//);  }";
 
       return new ConstantInputReader(str);
     }
