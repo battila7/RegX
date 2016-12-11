@@ -1,11 +1,12 @@
 package hu.fordprog.regx.interpreter.symbol;
 
+import java.util.Collections;
 import java.util.List;
 
 public abstract class Function {
-  private final List<Symbol> arguments;
+  protected final List<Symbol> arguments;
 
-  private final Type returnType;
+  protected final Type returnType;
 
   public Function(List<Symbol> arguments, Type returnType) {
     this.arguments = arguments;
@@ -14,7 +15,7 @@ public abstract class Function {
   }
 
   public List<Symbol> getArguments() {
-    return arguments;
+    return Collections.unmodifiableList(arguments);
   }
 
   public Type getReturnType() {

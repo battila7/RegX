@@ -118,25 +118,35 @@ final class SemanticChecker extends RegxBaseListener {
 
   @Override
   public void enterFunctionDeclaration(FunctionDeclarationContext ctx) {
+    UserDefinedFunction function = null;
+
     if (checkIfDeclarationIsUnique(ctx.identifier())) {
-      addFunctionSymbol(ctx);
+      function = addFunctionSymbol(ctx);
     }
 
     symbolTable.enterScope(ctx);
 
-    parseFunctionArguments(ctx).forEach(symbolTable::addEntry);
+    for (Symbol s : parseFunctionArguments(ctx)) {
+      if (function != null) {
+        function.addArgument(s);
+      }
+
+      symbolTable.addEntry(s);
+    }
   }
 
-  private void addFunctionSymbol(FunctionDeclarationContext ctx) {
+  private UserDefinedFunction addFunctionSymbol(FunctionDeclarationContext ctx) {
     Type returnType = Type.valueOf(ctx.returnType().getText().toUpperCase());
 
     UserDefinedFunction function =
-        new UserDefinedFunction(parseFunctionArguments(ctx), returnType, ctx);
+        new UserDefinedFunction(returnType, ctx);
 
     functions.put(ctx, function);
 
     symbolTable.addEntry(
         new Symbol(ctx.identifier().getText(), FUNCTION, fromContext(ctx), from(function)));
+
+    return function;
   }
 
   private List<Symbol> parseFunctionArguments(FunctionDeclarationContext ctx) {

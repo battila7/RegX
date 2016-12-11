@@ -58,12 +58,15 @@ public class App {
      */
     /*
     if (DEBUG) {
-      String str = "function string cnst() { return \"Hello World!\"; } function void main() { print(cnst());  }";
+      String str =
+      "function string id(string str) {" +
+        "return str;" +
+      "} function void main() { " +
+        "print(id(\"asd\")); }";
 
       return new ConstantInputReader(str);
     }
     */
-
     if (arguments.files.isEmpty()) {
       return new StdinInputReader();
     }
