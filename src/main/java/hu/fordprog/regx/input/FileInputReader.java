@@ -47,6 +47,6 @@ public final class FileInputReader implements InputReader {
   }
 
   private String readFile() throws IOException {
-    return Files.readAllLines(path).stream().collect(joining());
+    return Files.readAllLines(path).stream().collect(joining("\n"));
   }
 }

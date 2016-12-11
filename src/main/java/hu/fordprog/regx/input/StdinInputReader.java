@@ -29,6 +29,6 @@ public final class StdinInputReader implements InputReader {
   private String readStdin() {
     BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
 
-    return reader.lines().collect(joining());
+    return reader.lines().collect(joining("\n"));
   }
 }

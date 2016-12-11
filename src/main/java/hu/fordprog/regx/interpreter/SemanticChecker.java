@@ -264,13 +264,15 @@ final class SemanticChecker extends RegxBaseListener {
                                               Symbol functionSymbol) {
     RegxParser.ArgumentListContext argCtx = ctx.functionCall().argumentList();
 
-    if (argCtx == null) {
-      return;
-    }
-
     Function function = (Function)functionSymbol.getSymbolValue().getValue();
 
     int expected = function.getArguments().size();
+
+    if (argCtx == null && expected > 0) {
+      errors.add(new WrongNumberOfArgumentsError(expected, 0, fromContext(ctx)));
+
+      return;
+    }
 
     int actual = argCtx.argument().size();
 
