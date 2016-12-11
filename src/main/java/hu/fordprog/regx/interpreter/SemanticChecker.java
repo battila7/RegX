@@ -231,9 +231,11 @@ final class SemanticChecker extends RegxBaseListener {
   public void exitFunctionCallExpression(RegxParser.FunctionCallExpressionContext ctx) {
     String functionIdentifier = ctx.functionCall().identifier().getText();
 
-    Symbol functionSymbol = symbolTable.getEntry(functionIdentifier).get();
+    Optional<Symbol> functionSymbol = symbolTable.getEntry(functionIdentifier);
 
-    checkFormalAndActualParameters(ctx, functionSymbol);
+    if (functionSymbol.isPresent()) {
+      checkFormalAndActualParameters(ctx, functionSymbol.get());
+    }
   }
 
   private void checkFormalAndActualParameters(RegxParser.FunctionCallExpressionContext ctx,
