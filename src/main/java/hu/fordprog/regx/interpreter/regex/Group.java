@@ -20,6 +20,11 @@ public class Group implements Atom {
   }
 
   @Override
+  public Automaton makeAutomaton(){
+    return child.makeAutomaton();
+  }
+
+  @Override
   public String asText() {
     return "(" + child.asText() + ")";
   }

@@ -4,6 +4,7 @@ import static java.util.stream.Collectors.joining;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 public class Concatenation implements Regex {
   private final List<Term> children;
@@ -16,45 +17,47 @@ public class Concatenation implements Regex {
     return children;
   }
 
+
   @Override
-  public Automaton makeAutomaton(){
-    Automaton concatAutomaton = new Automaton();
+  public Automaton makeAutomaton() {
+    Automaton concatenationAutomaton = new Automaton();
 
-    //First state created to start the automaton
-    concatAutomaton.setStartState(1);
+    concatenationAutomaton.setStartState(1);
 
-    //Find all accept states of the child automatons, to make a state transition from them
-    //to the newly created acc state of this automaton
-    List<Integer> childAcceptStates = new ArrayList<>();
-
-    //All child automaton's state indexes should be shifted to avoid multiple
-    //states with the same indexes
+    Set<Integer> currentAcc = null;
     for(Term term : children){
-      //Shifting all state indexes
-      Automaton childAutomaton = term.makeAutomaton()
-          .getShiftedAutomaton(concatAutomaton.getNextIdForNewState() - 1);
 
-      //Create a new entry in the new state transition table with a lambda
-      concatAutomaton.addNewStateTransition(1, "\\", childAutomaton.getStartState());
+      Automaton childAutomaton = term.makeAutomaton();
 
-      //collect all acceptStates for later transitions to add
-      childAcceptStates.addAll(childAutomaton.getAcceptStates());
+      if(currentAcc == null){
+        concatenationAutomaton.setStateTransitionTable(childAutomaton.getStateTransitionTable());
 
-      //we can add all the shifted state transitions now to the new table
-      concatAutomaton.getStateTransitionTable().addAll(childAutomaton.getStateTransitionTable());
+        currentAcc.addAll(childAutomaton.getAcceptStates());
+      }else{
+        Automaton shiftedAutomaton =
+            childAutomaton.getShiftedAutomaton(concatenationAutomaton.getNextIdForNewState());
+
+        concatenationAutomaton.getStateTransitionTable()
+            .addAll(shiftedAutomaton.getStateTransitionTable());
+
+        //link the previous acc states to the current start state
+
+        for(Integer acc : currentAcc){
+
+          concatenationAutomaton.addNewStateTransition(acc, "\\", shiftedAutomaton.getStartState());
+        }
+
+        //reset the current acc states
+        currentAcc.clear();
+        currentAcc.addAll(shiftedAutomaton.getAcceptStates());
+
+      }
     }
 
-    //all previous acc states should be linked to the new acc state
+    //the acc states are the last child automatons acc states
+    concatenationAutomaton.setAcceptStates(currentAcc);
 
-    Integer accState = concatAutomaton.getNextIdForNewState();
-
-    concatAutomaton.addNewAcceptState(accState);
-
-    for(Integer oldAcc : childAcceptStates){
-      concatAutomaton.addNewStateTransition(oldAcc, "\\", accState);
-    }
-
-    return concatAutomaton;
+    return concatenationAutomaton;
   }
 
   @Override
