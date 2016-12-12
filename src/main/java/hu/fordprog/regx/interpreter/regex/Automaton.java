@@ -1,26 +1,29 @@
 package hu.fordprog.regx.interpreter.regex;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Stream;
 
 public class Automaton {
 
-  private Map<Integer, Map<String, Integer>> stateTransitionTable;
+  private List<StateTransition> stateTransitionTable;
 
-  private List<Integer> acceptStates;
+  private Set<Integer> acceptStates;
 
   private Integer startState;
 
   public Automaton() {
-    stateTransitionTable = new HashMap<>();
+    stateTransitionTable = new ArrayList<>();
   }
 
-  public Map<Integer, Map<String, Integer>> getStateTransitionTable() {
+  public List<StateTransition> getStateTransitionTable() {
     return stateTransitionTable;
   }
 
-  public List<Integer> getAcceptStates() {
+  public Set<Integer> getAcceptStates() {
     return acceptStates;
   }
 
@@ -28,12 +31,11 @@ public class Automaton {
     return startState;
   }
 
-  public void setStateTransitionTable(
-      Map<Integer, Map<String, Integer>> stateTransitionTable) {
+  public void setStateTransitionTable(List<StateTransition> stateTransitionTable) {
     this.stateTransitionTable = stateTransitionTable;
   }
 
-  public void setAcceptStates(List<Integer> acceptStates) {
+  public void setAcceptStates(Set<Integer> acceptStates) {
     this.acceptStates = acceptStates;
   }
 
@@ -46,35 +48,20 @@ public class Automaton {
   }
 
   public void addNewStateTransition(Integer from, String str, Integer to){
-    if(stateTransitionTable.containsKey(from)){
-      if(stateTransitionTable.get(from).containsKey(str)){
-        System.out.println("Multiple states to go with the same character!");
-      }else{
-        stateTransitionTable.get(from).put(str, to);
-      }
-    }else{
-      Map<String, Integer> transition = new HashMap<>();
-      transition.put(str, to);
-      stateTransitionTable.put(from, transition);
-    }
+    stateTransitionTable.add(new StateTransition(from, str, to));
   }
 
   public Automaton getShiftedAutomaton(int shift){
-    Map<Integer, Map<String, Integer>> shiftedMap = new HashMap<>();
+    List<StateTransition> shiftedTable = new ArrayList<>();
 
-    for(Map.Entry<Integer, Map<String, Integer>> entry : stateTransitionTable.entrySet()){
-
-      Map<String, Integer> shiftedTransitionMap = new HashMap<>();
-
-      for(Map.Entry<String, Integer> entry1 : entry.getValue().entrySet()){
-        shiftedTransitionMap.put(entry1.getKey(), entry1.getValue() + shift);
-      }
-      shiftedMap.put(entry.getKey() + shift, shiftedTransitionMap);
+    for(StateTransition entry : this.stateTransitionTable){
+      shiftedTable
+          .add(new StateTransition(entry.getFrom() + shift, entry.getWith(), entry.getTo() + shift));
     }
 
     Automaton shiftedAutomaton = new Automaton();
     shiftedAutomaton.setStartState(this.startState + shift);
-    shiftedAutomaton.setStateTransitionTable(shiftedMap);
+    shiftedAutomaton.setStateTransitionTable(shiftedTable);
     for(Integer acc : acceptStates){
       shiftedAutomaton.addNewAcceptState(acc + shift);
     }
@@ -82,11 +69,15 @@ public class Automaton {
   }
 
   public Integer getNextIdForNewState(){
-    Integer id = 1;
-    while(stateTransitionTable.containsKey(id)){
-      id++;
+    int max = stateTransitionTable.stream()
+        .mapToInt(t -> t.getFrom())
+        .max().getAsInt();
+
+    if(max == 0){
+      return 2;
+    }else{
+      return max + 1;
     }
-    return id;
   }
 
   @Override
@@ -95,12 +86,9 @@ public class Automaton {
     sb.append("Automaton:\n");
     sb.append("--------");
 
-    for(Integer state : stateTransitionTable.keySet()){
-      for(String character : stateTransitionTable.get(state).keySet()){
-        sb.append(state).append(" | ").append(character).append(" | ")
-            .append(stateTransitionTable.get(state).get(character)).append("\n");
+    for(StateTransition entry : stateTransitionTable){
+        sb.append(entry.toString());
         sb.append("--------");
-      }
     }
 
     sb.append("Starting state: ").append(startState).append("\n");
@@ -109,6 +97,7 @@ public class Automaton {
       sb.append(i).append(" ");
     }
     sb.append("\n");
+
     return sb.toString();
   }
 }

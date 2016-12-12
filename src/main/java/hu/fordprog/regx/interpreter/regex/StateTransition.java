@@ -36,4 +36,18 @@ public class StateTransition {
   public void setTo(Integer to) {
     this.to = to;
   }
+
+  @Override
+  public String toString(){
+    StringBuilder sb = new StringBuilder();
+
+    sb.append(from)
+        .append(" | ")
+        .append(with)
+        .append(" | ")
+        .append(to)
+        .append("\n");
+
+    return sb.toString();
+  }
 }
