@@ -28,6 +28,15 @@ public class Automaton {
     return startState;
   }
 
+  public void setStateTransitionTable(
+      Map<Integer, Map<String, Integer>> stateTransitionTable) {
+    this.stateTransitionTable = stateTransitionTable;
+  }
+
+  public void setAcceptStates(List<Integer> acceptStates) {
+    this.acceptStates = acceptStates;
+  }
+
   public void setStartState(Integer startState) {
     this.startState = startState;
   }
@@ -50,6 +59,28 @@ public class Automaton {
     }
   }
 
+  public Automaton getShiftedAutomaton(int shift){
+    Map<Integer, Map<String, Integer>> shiftedMap = new HashMap<>();
+
+    for(Map.Entry<Integer, Map<String, Integer>> entry : stateTransitionTable.entrySet()){
+
+      Map<String, Integer> shiftedTransitionMap = new HashMap<>();
+
+      for(Map.Entry<String, Integer> entry1 : entry.getValue().entrySet()){
+        shiftedTransitionMap.put(entry1.getKey(), entry1.getValue() + shift);
+      }
+      shiftedMap.put(entry.getKey() + shift, shiftedTransitionMap);
+    }
+
+    Automaton shiftedAutomaton = new Automaton();
+    shiftedAutomaton.setStartState(this.startState + shift);
+    shiftedAutomaton.setStateTransitionTable(shiftedMap);
+    for(Integer acc : acceptStates){
+      shiftedAutomaton.addNewAcceptState(acc + shift);
+    }
+    return shiftedAutomaton;
+  }
+
   public Integer getNextIdForNewState(){
     Integer id = 1;
     while(stateTransitionTable.containsKey(id)){
@@ -66,15 +97,16 @@ public class Automaton {
 
     for(Integer state : stateTransitionTable.keySet()){
       for(String character : stateTransitionTable.get(state).keySet()){
-        sb.append(state + " | " + character + " | " + stateTransitionTable.get(state).get(character) + "\n");
+        sb.append(state).append(" | ").append(character).append(" | ")
+            .append(stateTransitionTable.get(state).get(character)).append("\n");
         sb.append("--------");
       }
     }
 
-    sb.append("Starting state: " + startState + "\n");
+    sb.append("Starting state: ").append(startState).append("\n");
     sb.append("Accepting states: ");
     for(Integer i : acceptStates){
-      sb.append(i+ " ");
+      sb.append(i).append(" ");
     }
     sb.append("\n");
     return sb.toString();
