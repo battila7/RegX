@@ -56,17 +56,14 @@ public class App {
     /*
      * Remove in release
      */
-    /*
+
     if (DEBUG) {
       String str =
-      "function string id(string str) {" +
-        "return str;" +
-      "} function void main() { " +
-        "print(id(\"asd\")); }";
+      "function void main() { regex asd = /a*sd/; match(asd, \"asd\"); }";
 
       return new ConstantInputReader(str);
     }
-    */
+
     if (arguments.files.isEmpty()) {
       return new StdinInputReader();
     }

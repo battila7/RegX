@@ -1,6 +1,6 @@
 package hu.fordprog.regx.interpreter.regex;
 
-public class RegexCharacter extends Atom {
+public class RegexCharacter implements Atom {
   private final String character;
 
   public RegexCharacter(String character) {
@@ -8,6 +8,11 @@ public class RegexCharacter extends Atom {
   }
 
   public String getCharacter() {
+    return character;
+  }
+
+  @Override
+  public String asText() {
     return character;
   }
 }

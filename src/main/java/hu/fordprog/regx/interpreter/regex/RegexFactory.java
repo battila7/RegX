@@ -10,6 +10,14 @@ import hu.fordprog.regx.grammar.RegularExpressionParser.RegexContext;
 import hu.fordprog.regx.grammar.RegularExpressionParser.TermContext;
 
 public class RegexFactory {
+  public static Union createEmptyRegex() {
+    Union union = new Union();
+
+    union.getChildren().add(new Concatenation());
+
+    return union;
+  }
+
   public Union createRegex(RegexContext ctx) {
     return processUnion(ctx);
   }
@@ -43,7 +51,7 @@ public class RegexFactory {
 
     Atom atom = processAtom(((ClosureTermContext) term).atom());
 
-    return new Term(atom);
+    return new ClosureTerm(atom);
   }
 
   private Atom processAtom(AtomContext atom) {

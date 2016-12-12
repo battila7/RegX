@@ -25,6 +25,7 @@ import hu.fordprog.regx.grammar.RegxParser.DeclarationInitializerContext;
 import hu.fordprog.regx.grammar.RegxParser.FunctionDeclarationContext;
 import hu.fordprog.regx.interpreter.error.*;
 import hu.fordprog.regx.interpreter.regex.RegexFactory;
+import hu.fordprog.regx.interpreter.regex.Union;
 import hu.fordprog.regx.interpreter.symbol.*;
 
 final class SemanticChecker extends RegxBaseListener {
@@ -38,6 +39,8 @@ final class SemanticChecker extends RegxBaseListener {
 
   private final ParseTreeProperty<Boolean> hasReturnStatement;
 
+  private final ParseTreeProperty<Union> regularExpressions;
+
   private final List<Symbol> implicitDeclarations;
 
   public SemanticChecker(List<Symbol> implicitDeclarations) {
@@ -50,6 +53,12 @@ final class SemanticChecker extends RegxBaseListener {
     this.hasReturnStatement = new ParseTreeProperty<>();
 
     this.implicitDeclarations = implicitDeclarations;
+
+    this.regularExpressions = new ParseTreeProperty<>();
+  }
+
+  public ParseTreeProperty<Union> getRegularExpressions() {
+    return regularExpressions;
   }
 
   @Override
@@ -274,7 +283,7 @@ final class SemanticChecker extends RegxBaseListener {
     if (regexErrorListener.getSyntaxErrors().isEmpty()) {
       RegexFactory factory = new RegexFactory();
 
-      factory.createRegex(regexCtx);
+      regularExpressions.put(ctx, factory.createRegex(regexCtx));
     }
   }
 

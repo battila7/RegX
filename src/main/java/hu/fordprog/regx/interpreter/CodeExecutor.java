@@ -28,6 +28,9 @@ import hu.fordprog.regx.grammar.RegxParser.ProgramContext;
 import hu.fordprog.regx.grammar.RegxParser.RegexDeclarationContext;
 import hu.fordprog.regx.grammar.RegxParser.StringDeclarationContext;
 import hu.fordprog.regx.grammar.RegxParser.VariableDeclarationContext;
+import hu.fordprog.regx.interpreter.regex.Regex;
+import hu.fordprog.regx.interpreter.regex.RegexFactory;
+import hu.fordprog.regx.interpreter.regex.Union;
 import hu.fordprog.regx.interpreter.stdlib.RegXList;
 import hu.fordprog.regx.interpreter.symbol.Function;
 import hu.fordprog.regx.interpreter.symbol.FunctionVisitor;
@@ -44,18 +47,19 @@ public class CodeExecutor implements FunctionVisitor {
 
   private final SymbolTable symbolTable;
 
-  private final ParseTreeProperty<Function> functions;
-
   private final Deque<CallContext> contextStack;
 
   private final SymbolValue voidSymbolValue;
 
-  public CodeExecutor(SymbolTable symbolTable, ProgramContext programCtx) {
+  private  final ParseTreeProperty<Union> regularExpressions;
+
+  public CodeExecutor(SymbolTable symbolTable, ProgramContext programCtx,
+                      ParseTreeProperty<Union> regularExpressions) {
     this.programCtx = programCtx;
 
     this.symbolTable = symbolTable;
 
-    this.functions = new ParseTreeProperty<>();
+    this.regularExpressions = regularExpressions;
 
     this.contextStack = new LinkedList<>();
 
@@ -138,8 +142,7 @@ public class CodeExecutor implements FunctionVisitor {
     DeclarationInitializerContext initializer = declaration.declarationInitializer();
 
     if (initializer == null) {
-      // TODO Assign empty regex tree
-      symbol.getSymbolValue().setValue(null);
+      symbol.getSymbolValue().setValue(RegexFactory.createEmptyRegex());
     } else {
       executeExpression(initializer.expression(), symbol.getSymbolValue());
     }
@@ -291,8 +294,7 @@ public class CodeExecutor implements FunctionVisitor {
 
       return list;
     } else {
-      // TODO Return Regex
-      return null;
+      return regularExpressions.get(literal.regexLiteral());
     }
   }
 

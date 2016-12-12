@@ -6,10 +6,10 @@ import static java.util.stream.Collectors.toList;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.TokenStream;
+import org.antlr.v4.runtime.tree.ParseTreeProperty;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 
 import java.io.PrintWriter;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -18,6 +18,8 @@ import hu.fordprog.regx.grammar.RegxParser;
 import hu.fordprog.regx.input.InputReader;
 import hu.fordprog.regx.input.InputReaderException;
 import hu.fordprog.regx.interpreter.error.SemanticError;
+import hu.fordprog.regx.interpreter.regex.RegexDeclarations;
+import hu.fordprog.regx.interpreter.regex.Union;
 import hu.fordprog.regx.interpreter.stdlib.IO;
 import hu.fordprog.regx.interpreter.stdlib.ImplicitDeclarationSource;
 import hu.fordprog.regx.interpreter.stdlib.RegXList;
@@ -30,6 +32,8 @@ public class Interpreter {
   private PrintWriter outputWriter;
 
   private boolean verbose;
+
+  private ParseTreeProperty<Union> regularExpressions;
 
   private final SyntaxErrorListener syntaxErrorListener;
 
@@ -63,7 +67,8 @@ public class Interpreter {
       return;
     }
 
-    CodeExecutor codeExecutor = new CodeExecutor(semanticChecker.getSymbolTable(), parseTree);
+    CodeExecutor codeExecutor = new CodeExecutor(semanticChecker.getSymbolTable(), parseTree,
+        regularExpressions);
 
     codeExecutor.execute();
   }
@@ -92,6 +97,8 @@ public class Interpreter {
 
   private boolean checkSemantics(RegxParser.ProgramContext parseTree) {
     ParseTreeWalker.DEFAULT.walk(semanticChecker, parseTree);
+
+    regularExpressions = semanticChecker.getRegularExpressions();
 
     List<SemanticError> semanticErrors = semanticChecker.getErrors();
 
@@ -132,7 +139,8 @@ public class Interpreter {
 
   private List<Symbol> createImplicitDeclarations() {
     List<ImplicitDeclarationSource> sources =
-        Arrays.asList(new IO(), new RegXList.Declarations(), new RegXStringDeclarations());
+        Arrays.asList(new IO(), new RegXList.Declarations(), new RegXStringDeclarations(),
+                      new RegexDeclarations());
 
     return sources.stream()
         .map(ImplicitDeclarationSource::getDeclarations)
