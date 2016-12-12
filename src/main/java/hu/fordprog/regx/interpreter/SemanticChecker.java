@@ -24,6 +24,7 @@ import hu.fordprog.regx.grammar.RegxParser;
 import hu.fordprog.regx.grammar.RegxParser.DeclarationInitializerContext;
 import hu.fordprog.regx.grammar.RegxParser.FunctionDeclarationContext;
 import hu.fordprog.regx.interpreter.error.*;
+import hu.fordprog.regx.interpreter.regex.RegexFactory;
 import hu.fordprog.regx.interpreter.symbol.*;
 
 final class SemanticChecker extends RegxBaseListener {
@@ -264,11 +265,17 @@ final class SemanticChecker extends RegxBaseListener {
     parser.removeErrorListeners();
     parser.addErrorListener(regexErrorListener);
 
-    parser.start();
+    RegularExpressionParser.RegexContext regexCtx = parser.start().regex();
 
     regexErrorListener.getSyntaxErrors().stream()
         .map(s -> new InvalidRegularExpressionError(s.toString(), fromContext(ctx)))
         .forEach(errors::add);
+
+    if (regexErrorListener.getSyntaxErrors().isEmpty()) {
+      RegexFactory factory = new RegexFactory();
+
+      factory.createRegex(regexCtx);
+    }
   }
 
   @Override
