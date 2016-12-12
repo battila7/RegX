@@ -12,6 +12,17 @@ public class RegexCharacter implements Atom {
   }
 
   @Override
+  public Automaton makeAutomaton(){
+    Automaton automaton = new Automaton();
+
+    automaton.setStartState(1);
+    automaton.addNewStateTransition(1, character, 2);
+    automaton.addNewAcceptState(2);
+
+    return automaton;
+  }
+
+  @Override
   public String asText() {
     return character;
   }

@@ -20,6 +20,11 @@ public class Term implements Regex {
   }
 
   @Override
+  public Automaton makeAutomaton(){
+    return child.makeAutomaton();
+  }
+
+  @Override
   public String asText() {
     return child.asText();
   }

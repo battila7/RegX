@@ -6,9 +6,9 @@ import java.util.Map;
 
 public class Automaton {
 
-  private Map<Integer, Map<RegexCharacter, Integer>> stateTransitionTable;
+  private Map<Integer, Map<String, Integer>> stateTransitionTable;
 
-  private List<Integer> acceptState;
+  private List<Integer> acceptStates;
 
   private Integer startState;
 
@@ -16,12 +16,12 @@ public class Automaton {
     stateTransitionTable = new HashMap<>();
   }
 
-  public Map<Integer, Map<RegexCharacter, Integer>> getStateTransitionTable() {
+  public Map<Integer, Map<String, Integer>> getStateTransitionTable() {
     return stateTransitionTable;
   }
 
-  public List<Integer> getAcceptState() {
-    return acceptState;
+  public List<Integer> getAcceptStates() {
+    return acceptStates;
   }
 
   public Integer getStartState() {
@@ -33,33 +33,50 @@ public class Automaton {
   }
 
   public void addNewAcceptState(Integer newAccState){
-    acceptState.add(newAccState);
+    acceptStates.add(newAccState);
   }
 
-  public void addNewStateTransition(Integer from, RegexCharacter c, Integer to){
+  public void addNewStateTransition(Integer from, String str, Integer to){
     if(stateTransitionTable.containsKey(from)){
-      if(stateTransitionTable.get(from).containsKey(c)){
+      if(stateTransitionTable.get(from).containsKey(str)){
         System.out.println("Multiple states to go with the same character!");
       }else{
-        stateTransitionTable.get(from).put(c, to);
+        stateTransitionTable.get(from).put(str, to);
       }
     }else{
-      Map<RegexCharacter, Integer> transition = new HashMap<>();
-      transition.put(c, to);
+      Map<String, Integer> transition = new HashMap<>();
+      transition.put(str, to);
       stateTransitionTable.put(from, transition);
     }
+  }
+
+  public Integer getNextIdForNewState(){
+    Integer id = 1;
+    while(stateTransitionTable.containsKey(id)){
+      id++;
+    }
+    return id;
   }
 
   @Override
   public String toString(){
     StringBuilder sb = new StringBuilder();
-    sb.append("Automaton:\n---------");
+    sb.append("Automaton:\n");
+    sb.append("--------");
 
     for(Integer state : stateTransitionTable.keySet()){
-      for(RegexCharacter character : stateTransitionTable.get(state).keySet()){
+      for(String character : stateTransitionTable.get(state).keySet()){
         sb.append(state + " | " + character + " | " + stateTransitionTable.get(state).get(character) + "\n");
+        sb.append("--------");
       }
     }
+
+    sb.append("Starting state: " + startState + "\n");
+    sb.append("Accepting states: ");
+    for(Integer i : acceptStates){
+      sb.append(i+ " ");
+    }
+    sb.append("\n");
     return sb.toString();
   }
 }
