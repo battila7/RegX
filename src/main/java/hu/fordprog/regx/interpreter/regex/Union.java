@@ -30,18 +30,24 @@ public class Union implements Regex {
     //All child automaton's state indexes should be shifted to avoid multiple
     //states with the same indexes
     for(Concatenation concatenation : children){
+      Automaton childAutomaton = concatenation.makeAutomaton();
+
+      if(children.size() == 1){
+        return childAutomaton;
+      }
+
       //Shifting all state indexes
-      Automaton childAutomaton = concatenation.makeAutomaton()
+      Automaton shiftedAutomaton = childAutomaton
           .getShiftedAutomaton(unionAutomaton.getNextIdForNewState() - 1);
 
       //Create a new entry in the new state transition table with a lambda
-      unionAutomaton.addNewStateTransition(1, "\\", childAutomaton.getStartState());
+      unionAutomaton.addNewStateTransition(1, "\\", shiftedAutomaton.getStartState());
 
       //collect all acceptStates for later transitions to add
-      childAcceptStates.addAll(childAutomaton.getAcceptStates());
+      childAcceptStates.addAll(shiftedAutomaton.getAcceptStates());
 
       //we can add all the shifted state transitions now to the new table
-      unionAutomaton.getStateTransitionTable().addAll(childAutomaton.getStateTransitionTable());
+      unionAutomaton.getStateTransitionTable().addAll(shiftedAutomaton.getStateTransitionTable());
     }
 
     //all previous acc states should be linked to the new acc state

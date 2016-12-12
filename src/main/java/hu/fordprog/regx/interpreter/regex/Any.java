@@ -5,4 +5,9 @@ public class Any implements Atom {
   public String asText() {
     return ".";
   }
+
+  @Override
+  public Automaton makeAutomaton() {
+    return null;
+  }
 }

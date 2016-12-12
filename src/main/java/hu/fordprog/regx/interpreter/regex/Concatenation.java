@@ -3,6 +3,7 @@ package hu.fordprog.regx.interpreter.regex;
 import static java.util.stream.Collectors.joining;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -16,7 +17,6 @@ public class Concatenation implements Regex {
   public List<Term> getChildren() {
     return children;
   }
-
 
   @Override
   public Automaton makeAutomaton() {
@@ -32,10 +32,12 @@ public class Concatenation implements Regex {
       if(currentAcc == null){
         concatenationAutomaton.setStateTransitionTable(childAutomaton.getStateTransitionTable());
 
+        currentAcc = new HashSet<>();
         currentAcc.addAll(childAutomaton.getAcceptStates());
+
       }else{
         Automaton shiftedAutomaton =
-            childAutomaton.getShiftedAutomaton(concatenationAutomaton.getNextIdForNewState());
+            childAutomaton.getShiftedAutomaton(concatenationAutomaton.getNextIdForNewState()-1);
 
         concatenationAutomaton.getStateTransitionTable()
             .addAll(shiftedAutomaton.getStateTransitionTable());
@@ -54,7 +56,7 @@ public class Concatenation implements Regex {
       }
     }
 
-    //the acc states are the last child automatons acc states
+    //the acc states are the last child automaton's acc states
     concatenationAutomaton.setAcceptStates(currentAcc);
 
     return concatenationAutomaton;

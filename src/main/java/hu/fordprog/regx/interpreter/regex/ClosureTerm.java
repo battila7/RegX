@@ -9,7 +9,7 @@ public class ClosureTerm extends Term {
   public Automaton makeAutomaton(){
     Automaton closureAutomaton = new Automaton();
 
-    Automaton childAutomaton = this.makeAutomaton();
+    Automaton childAutomaton = getChild().makeAutomaton();
 
     Automaton shiftedAutomaton = childAutomaton.getShiftedAutomaton(1);
 

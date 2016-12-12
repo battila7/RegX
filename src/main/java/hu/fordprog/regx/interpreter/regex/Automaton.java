@@ -68,8 +68,11 @@ public class Automaton {
   }
 
   public Integer getNextIdForNewState(){
+    if(stateTransitionTable.size() == 0){
+      return 2;
+    }
     int max = stateTransitionTable.stream()
-        .mapToInt(t -> t.getFrom())
+        .mapToInt(t -> t.getTo())
         .max().getAsInt();
 
     if(max == 0){
@@ -83,11 +86,11 @@ public class Automaton {
   public String toString(){
     StringBuilder sb = new StringBuilder();
     sb.append("Automaton:\n");
-    sb.append("--------");
+    sb.append("--------\n");
 
     for(StateTransition entry : stateTransitionTable){
         sb.append(entry.toString());
-        sb.append("--------");
+        sb.append("--------\n");
     }
 
     sb.append("Starting state: ").append(startState).append("\n");

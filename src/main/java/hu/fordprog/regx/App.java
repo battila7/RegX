@@ -59,7 +59,7 @@ public class App {
 
     if (DEBUG) {
       String str =
-      "function void main() { regex asd = /a*sd/; match(asd, \"asd\"); }";
+      "function void main() { regex asd = /abc/; print_automaton(asd); }";
 
       return new ConstantInputReader(str);
     }
