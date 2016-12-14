@@ -10,4 +10,9 @@ public class Any implements Atom {
   public Automaton makeAutomaton() {
     return null;
   }
+
+  @Override
+  public Regex normalize() {
+    return this;
+  }
 }

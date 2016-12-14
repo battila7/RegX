@@ -35,6 +35,18 @@ public class RegexDeclarations implements ImplicitDeclarationSource {
 
     declarations.add(nativeFunction("print_automaton", printAuFn));
 
+    NativeFunction normalizeFn =
+        new NativeFunction(singletonList(nativeArgument("rx", REGEX)),
+            REGEX, RegexDeclarations::normalizeRegex);
+
+    declarations.add(nativeFunction("normalize", normalizeFn));
+
+    NativeFunction asTextFn =
+        new NativeFunction(singletonList(nativeArgument("rx", REGEX)),
+            STRING, RegexDeclarations::regexToString);
+
+    declarations.add(nativeFunction("asText", asTextFn));
+
     return declarations;
   }
 
@@ -56,6 +68,20 @@ public class RegexDeclarations implements ImplicitDeclarationSource {
     System.out.println(regex.makeAutomaton());
 
     return VOID_RETURN_VALUE;
+  }
+
+  private static Object normalizeRegex(List<Object> arguments){
+    Regex regex = (Regex)arguments.get(0);
+
+    Regex normalized = regex.normalize();
+
+    return normalized;
+  }
+
+  private static Object regexToString(List<Object> arguments) {
+    Regex regex = (Regex) arguments.get(0);
+
+    return regex.asText();
   }
 
 }

@@ -25,6 +25,11 @@ public class Group implements Atom {
   }
 
   @Override
+  public Regex normalize(){
+    return new Group((Union)child.normalize());
+  }
+
+  @Override
   public String asText() {
     return "(" + child.asText() + ")";
   }

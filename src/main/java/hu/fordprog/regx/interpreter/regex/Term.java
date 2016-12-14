@@ -25,6 +25,11 @@ public class Term implements Regex {
   }
 
   @Override
+  public Regex normalize(){
+    return new Term((Atom)child.normalize());
+  }
+
+  @Override
   public String asText() {
     return child.asText();
   }

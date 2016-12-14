@@ -12,6 +12,11 @@ public class Union implements Regex {
     children = new ArrayList<>();
   }
 
+  public Union(Concatenation concatenation){
+    children = new ArrayList<>();
+    children.add(concatenation);
+  }
+
   public List<Concatenation> getChildren() {
     return children;
   }
@@ -61,6 +66,19 @@ public class Union implements Regex {
     }
 
     return unionAutomaton;
+  }
+
+  @Override
+  public Regex normalize() {
+    Union union = new Union();
+
+    for(Concatenation child : children){
+      Concatenation concat = (Concatenation) child.normalize();
+
+      union.getChildren().add(concat);
+    }
+
+    return union;
   }
 
   @Override

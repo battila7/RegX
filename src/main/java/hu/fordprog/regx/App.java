@@ -59,7 +59,7 @@ public class App {
 
     if (DEBUG) {
       String str =
-      "function void main() { regex asd = /abc/; print_automaton(asd); }";
+      "function void main() { regex asd = /ab(c+d)e(f+g)h/; regex b = normalize(asd); print(asText(b));}";
 
       return new ConstantInputReader(str);
     }

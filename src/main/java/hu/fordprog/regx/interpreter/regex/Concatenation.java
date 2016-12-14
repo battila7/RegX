@@ -14,8 +14,17 @@ public class Concatenation implements Regex {
     children = new ArrayList<>();
   }
 
+  public Concatenation(Term term){
+    children = new ArrayList<>();
+    children.add(term);
+  }
+
   public List<Term> getChildren() {
     return children;
+  }
+
+  public void addUnionChild(Union union){
+    children.add(new Term(new Group(union)));
   }
 
   @Override
@@ -60,6 +69,18 @@ public class Concatenation implements Regex {
     concatenationAutomaton.setAcceptStates(currentAcc);
 
     return concatenationAutomaton;
+  }
+
+  @Override
+  public Regex normalize() {
+    Concatenation concat = new Concatenation();
+
+    for (Term child : children){
+      Term term = (Term)child.normalize();
+      concat.getChildren().add(term);
+    }
+
+    return RegexUnionNormForm.normalize(concat);
   }
 
   @Override

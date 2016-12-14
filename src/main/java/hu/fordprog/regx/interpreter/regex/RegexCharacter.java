@@ -23,6 +23,11 @@ public class RegexCharacter implements Atom {
   }
 
   @Override
+  public Regex normalize() {
+    return this;
+  }
+
+  @Override
   public String asText() {
     return character;
   }
