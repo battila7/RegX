@@ -3,6 +3,7 @@ package hu.fordprog.regx.interpreter.stdlib;
 import static hu.fordprog.regx.interpreter.symbol.Symbol.nativeArgument;
 import static hu.fordprog.regx.interpreter.symbol.Symbol.nativeFunction;
 import static hu.fordprog.regx.interpreter.symbol.Type.LIST;
+import static hu.fordprog.regx.interpreter.symbol.Type.REGEX;
 import static hu.fordprog.regx.interpreter.symbol.Type.STRING;
 import static hu.fordprog.regx.interpreter.symbol.Type.VOID;
 import static java.util.Collections.emptyList;
@@ -17,10 +18,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 import java.util.regex.Pattern;
+import hu.fordprog.regx.grammar.RegularExpressionLexer;
+import hu.fordprog.regx.grammar.RegularExpressionParser;
 import hu.fordprog.regx.grammar.RegxLexer;
 import hu.fordprog.regx.grammar.RegxParser;
 import hu.fordprog.regx.grammar.RegxParser.StringListLiteralContext;
 import hu.fordprog.regx.interpreter.SyntaxErrorListener;
+import hu.fordprog.regx.interpreter.regex.Regex;
+import hu.fordprog.regx.interpreter.regex.RegexFactory;
 import hu.fordprog.regx.interpreter.symbol.NativeFunction;
 import hu.fordprog.regx.interpreter.symbol.Symbol;
 
@@ -31,14 +36,12 @@ public final class IO implements ImplicitDeclarationSource {
 
   private final ListReader listReader;
 
+  private final RegexReader regexReader;
+
   public IO() {
     this.listReader = new ListReader();
-  }
 
-  private Pattern createListPattern() {
-
-
-    return null;
+    this.regexReader = new RegexReader();
   }
 
   @Override
@@ -60,6 +63,11 @@ public final class IO implements ImplicitDeclarationSource {
 
     declarations.add(nativeFunction("read_list", readListFn));
 
+    NativeFunction readRegexFn =
+        new NativeFunction(emptyList(), REGEX, this::readRegex);
+
+    declarations.add(nativeFunction("read_regex", readRegexFn));
+
     return declarations;
   }
 
@@ -77,12 +85,16 @@ public final class IO implements ImplicitDeclarationSource {
     return listReader.readList(scanner.nextLine());
   }
 
+  private Object readRegex(List<Object> arguments) {
+    return regexReader.readRegex(scanner.nextLine());
+  }
+
   private final class ListReader {
-    private RegxLexer lexer;
+    private final RegxLexer lexer;
 
-    private RegxParser parser;
+    private final RegxParser parser;
 
-    private SyntaxErrorListener errorListener;
+    private final SyntaxErrorListener errorListener;
 
     private ListReader() {
       this.errorListener = new SyntaxErrorListener();
@@ -112,6 +124,62 @@ public final class IO implements ImplicitDeclarationSource {
       }
 
       return processLiteral(ctx);
+    }
+
+    private RegXList processLiteral(StringListLiteralContext ctx) {
+      RegXList list = new RegXList();
+
+      if (ctx.stringLiteralList() != null) {
+        ctx.stringLiteralList().StringLiteral()
+            .stream()
+            .map(TerminalNode::getText)
+            .map(s -> s.substring(1, s.length() - 1))
+            .forEach(list::pushBack);
+      }
+
+      return list;
+    }
+  }
+
+  private final class RegexReader {
+    private final RegularExpressionLexer lexer;
+
+    private final RegularExpressionParser parser;
+
+    private final SyntaxErrorListener errorListener;
+
+    private final RegexFactory regexFactory;
+
+    private RegexReader() {
+      this.errorListener = new SyntaxErrorListener();
+
+      this.lexer = new RegularExpressionLexer(new ANTLRInputStream(""));
+
+      this.lexer.removeErrorListeners();
+      this.lexer.addErrorListener(errorListener);
+
+      this.parser = new RegularExpressionParser(new CommonTokenStream(lexer));
+
+      this.parser.removeErrorListeners();
+      this.parser.addErrorListener(errorListener);
+
+      this.regexFactory = new RegexFactory();
+    }
+
+    private Regex readRegex(String str) {
+      errorListener.clearErrors();
+
+      lexer.setInputStream(new ANTLRInputStream(str));
+
+      parser.setTokenStream(new CommonTokenStream(lexer));
+
+      RegularExpressionParser.RegexContext ctx = parser.regex();
+
+      if (!errorListener.getSyntaxErrors().isEmpty()) {
+        return RegexFactory.createEmptyRegex();
+      }
+
+      return regexFactory.createRegex(ctx);
     }
 
     private RegXList processLiteral(StringListLiteralContext ctx) {
