@@ -27,6 +27,10 @@ public class Concatenation implements Regex {
     children.add(new Term(new Group(union)));
   }
 
+  public void addConcatenationChild(Concatenation concatenation){
+    addUnionChild(new Union(concatenation));
+  }
+
   @Override
   public Automaton makeAutomaton() {
     Automaton concatenationAutomaton = new Automaton();

@@ -8,6 +8,7 @@ public class RegexUnionNormForm {
   static Regex regex;
 
   public static Regex normalize(Regex original){
+
     if(isClosureRuleApplicable(original)){
       applyClosureRule(original);
     } else if(isConcatRulesApplicable(original)){
@@ -29,14 +30,26 @@ public class RegexUnionNormForm {
     Concatenation newConcatenationChild = new Concatenation();
 
     for(Concatenation originalConcat : originalList){
-      ClosureTerm closureTerm = new ClosureTerm(new Group(new Union(originalConcat)));
+
+      ClosureTerm closureTerm;
+
+      if(originalConcat.getChildren().size()==1
+          && originalConcat.getChildren().get(0).getChild() instanceof RegexCharacter){
+
+         closureTerm = new ClosureTerm(originalConcat.getChildren().get(0).getChild() );
+
+      }else{
+
+         closureTerm = new ClosureTerm(new Group(new Union(originalConcat)));
+      }
+
 
       newConcatenationChild.getChildren().add(closureTerm);
     }
 
-    ClosureTerm newClosureTerm = new ClosureTerm(new Group(new Union(newConcatenationChild)));
+    ClosureTerm rootClosureTerm = new ClosureTerm(new Group(new Union(newConcatenationChild)));
 
-    regex = newClosureTerm;
+    regex = rootClosureTerm;
   }
 
   private static void applyConcatRules(Regex original) {
@@ -44,7 +57,9 @@ public class RegexUnionNormForm {
 
     List<Term> originalTermOfConcatList = originalConcatenation.getChildren();
 
-    Concatenation newRootConcatenation = new Concatenation();
+    Concatenation rootConcatenation = new Concatenation();
+
+    rootConcatenation.getChildren().addAll(originalTermOfConcatList);
 
     /*
      * 0. get the known union at the front of the concat list with applying rule 2
@@ -70,11 +85,12 @@ public class RegexUnionNormForm {
 
         newFirstUnion.getChildren().add(newConcat);
       }
+      rootConcatenation.getChildren().clear();
 
-      newRootConcatenation.addUnionChild(newFirstUnion);
+      rootConcatenation.addUnionChild(newFirstUnion);
 
       for(int i = currentUnionIndex + 1; i < originalTermOfConcatList.size(); ++i){
-        newRootConcatenation.getChildren().add(originalTermOfConcatList.get(i));
+        rootConcatenation.getChildren().add(originalTermOfConcatList.get(i));
       }
     }
 
@@ -82,20 +98,116 @@ public class RegexUnionNormForm {
      * 1. get all unions at the front of the concatenation list
      */
 
-    
+    currentUnionIndex = getFirstIndexOfUnionInConcatenationFromIndex(rootConcatenation, 1);
 
-    //each pair of unions should be reformed together into a new union
+    // -1:  if there are no more union in the concat, just the one on the first spot
+    while (currentUnionIndex != -1){
 
-    //when only one is left at the front reform a new union with all that is left at the back of the list
+      List<Term> oldTermList = new ArrayList<>(rootConcatenation.getChildren());
 
-    //form the union and wrap it into a concatenation to keep the hierarchy
+      Union currentUnion = ((Group)oldTermList.get(currentUnionIndex).getChild()).getChild();
 
-    regex = newRootConcatenation;
+      Union newUnion = new Union();
+
+
+      if(currentUnionIndex != 1){
+        for(Concatenation unionChildConcat : currentUnion.getChildren()){
+          Concatenation newConcat = new Concatenation();
+
+          //the 0. spot is the other union!
+          for (int i = 1; i < currentUnionIndex; ++i){
+            Term childTerm = oldTermList.get(i);
+
+            newConcat.getChildren().add(childTerm);
+          }
+
+          newConcat.addUnionChild(new Union(unionChildConcat));
+
+          newUnion.getChildren().add(newConcat);
+        }
+
+        rootConcatenation.getChildren().clear();
+
+        rootConcatenation.getChildren().add(oldTermList.get(0));
+        rootConcatenation.addUnionChild(newUnion);
+
+        for(int i = currentUnionIndex + 1; i < oldTermList.size(); ++i){
+          rootConcatenation.getChildren().add(oldTermList.get(i));
+        }
+      }
+
+      /*
+       * 2. the pair of unions at 0. and 1. index should be reformed together into a new union
+       */
+
+      oldTermList = new ArrayList<>(rootConcatenation.getChildren());
+
+      Union firstUnion = ((Group)oldTermList.get(0).getChild()).getChild();
+      Union secondUnion = ((Group)oldTermList.get(1).getChild()).getChild();
+
+      Union mergedUnion = new Union();
+
+     for(Concatenation firstConcat : firstUnion.getChildren()){
+       for(Concatenation secondConcat : secondUnion.getChildren()){
+         Concatenation concat = new Concatenation();
+         concat.addConcatenationChild(firstConcat);
+         concat.addConcatenationChild(secondConcat);
+
+         mergedUnion.getChildren().add(concat);
+       }
+     }
+
+      rootConcatenation.getChildren().clear();
+
+      rootConcatenation.addUnionChild(mergedUnion);
+
+      for(int i = 2; i < oldTermList.size(); ++i){
+        rootConcatenation.getChildren().add(oldTermList.get(i));
+      }
+
+      currentUnionIndex = getFirstIndexOfUnionInConcatenationFromIndex(rootConcatenation, 1);
+    }
+
+    /*
+     * 3. when only one is left at the front reform a new union with all that is left at the back of the list
+     */
+    List<Term> oldTermList = new ArrayList<>(rootConcatenation.getChildren());
+
+    Union oldUnion = ((Group)oldTermList.get(0).getChild()).getChild();
+
+    Union rootUnion = new Union();
+
+    if(oldTermList.size() > 1){
+      for(Concatenation child : oldUnion.getChildren() ){
+        for(int i = 1; i < oldTermList.size(); ++i){
+          Concatenation concat = new Concatenation();
+
+          Term childTerm = oldTermList.get(i);
+
+          concat.addConcatenationChild(child);
+          concat.getChildren().add(childTerm);
+
+          rootUnion.getChildren().add(concat);
+        }
+      }
+    }else {
+      rootUnion = oldUnion;
+    }
+
+    /*
+     * 4. form the union and wrap it into a concatenation to keep the hierarchy
+     */
+    rootConcatenation.getChildren().clear();
+
+    rootConcatenation.addUnionChild(rootUnion);
+
+    regex = rootConcatenation;
   }
 
   private static boolean isClosureRuleApplicable(Regex original) {
     return original instanceof ClosureTerm
-        && ((Term)original).getChild() instanceof Group;
+        && ((ClosureTerm)original).getChild() instanceof Group
+        && ((Group)((ClosureTerm)original).getChild()).getChild().getChildren().size()>1;
   }
 
   private static boolean isConcatRulesApplicable(Regex original) {
@@ -113,7 +225,8 @@ public class RegexUnionNormForm {
     for(int i = index; i < children.size(); ++i){
       Atom child = children.get(i).getChild();
 
-      if(child instanceof Group){
+      if(child instanceof Group
+          && ((Group) child).getChild().getChildren().size() > 1){
         return i;
       }
     }
