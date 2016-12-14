@@ -25,4 +25,8 @@ public class SyntaxErrorListener extends BaseErrorListener {
   public List<SyntaxError> getSyntaxErrors() {
     return Collections.unmodifiableList(syntaxErrors);
   }
+
+  public void clearErrors() {
+    syntaxErrors.clear();
+  }
 }
