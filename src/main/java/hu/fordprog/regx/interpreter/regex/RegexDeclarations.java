@@ -41,6 +41,12 @@ public class RegexDeclarations implements ImplicitDeclarationSource {
 
     declarations.add(nativeFunction("normalize", normalizeFn));
 
+    NativeFunction simplifyFn =
+        new NativeFunction(singletonList(nativeArgument("rx", REGEX)),
+            REGEX, RegexDeclarations::simplifyRegex);
+
+    declarations.add(nativeFunction("simplify", simplifyFn));
+
     NativeFunction asTextFn =
         new NativeFunction(singletonList(nativeArgument("rx", REGEX)),
             STRING, RegexDeclarations::regexToString);
@@ -76,6 +82,15 @@ public class RegexDeclarations implements ImplicitDeclarationSource {
     Regex normalized = regex.normalize();
 
     return normalized;
+  }
+
+
+  private static Object simplifyRegex(List<Object> arguments){
+    Regex regex = (Regex)arguments.get(0);
+
+    Regex simplified = regex;//.simplify();
+
+    return simplified;
   }
 
   private static Object regexToString(List<Object> arguments) {
