@@ -56,14 +56,14 @@ public class App {
     /*
      * Remove in release
      */
-
+    /*
     if (DEBUG) {
       String str =
       "function void main() { regex asd = /a*sd/; match(asd, \"asd\"); }";
 
       return new ConstantInputReader(str);
     }
-
+    */
     if (arguments.files.isEmpty()) {
       return new StdinInputReader();
     }
