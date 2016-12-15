@@ -56,7 +56,7 @@ public class App {
     /*
      * Remove in release
      */
-
+    /*
     if (DEBUG) {
       String str =
       "function void main() { regex asd = /((ab+c*)d*)*/;"
@@ -64,7 +64,7 @@ public class App {
 
       return new ConstantInputReader(str);
     }
-
+    */
     if (arguments.files.isEmpty()) {
       return new StdinInputReader();
     }
