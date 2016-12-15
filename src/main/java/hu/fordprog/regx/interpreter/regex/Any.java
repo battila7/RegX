@@ -5,4 +5,19 @@ public class Any implements Atom {
   public String asText() {
     return ".";
   }
+
+  @Override
+  public Automaton makeAutomaton() {
+    return null;
+  }
+
+  @Override
+  public Regex normalize() {
+    return this;
+  }
+
+  @Override
+  public Regex simplify() {
+    return null;
+  }
 }

@@ -59,7 +59,8 @@ public class App {
     /*
     if (DEBUG) {
       String str =
-      "function void main() { regex asd = /a*sd/; match(asd, \"asd\"); }";
+      "function void main() { regex asd = /((ab+c*)d*)*/;"
+          + " regex b = simplify(asd); print(asText(b));}";
 
       return new ConstantInputReader(str);
     }
