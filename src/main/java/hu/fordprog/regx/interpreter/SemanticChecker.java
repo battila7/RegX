@@ -23,6 +23,7 @@ import hu.fordprog.regx.grammar.RegxBaseListener;
 import hu.fordprog.regx.grammar.RegxParser;
 import hu.fordprog.regx.grammar.RegxParser.DeclarationInitializerContext;
 import hu.fordprog.regx.grammar.RegxParser.FunctionDeclarationContext;
+import hu.fordprog.regx.grammar.RegxParser.StatementContext;
 import hu.fordprog.regx.interpreter.error.*;
 import hu.fordprog.regx.interpreter.regex.RegexFactory;
 import hu.fordprog.regx.interpreter.regex.Union;
@@ -37,8 +38,6 @@ final class SemanticChecker extends RegxBaseListener {
 
   private final ParseTreeProperty<Type> expressionTypes;
 
-  private final ParseTreeProperty<Boolean> hasReturnStatement;
-
   private final ParseTreeProperty<Union> regularExpressions;
 
   private final List<Symbol> implicitDeclarations;
@@ -49,8 +48,6 @@ final class SemanticChecker extends RegxBaseListener {
     this.functions = new ParseTreeProperty<>();
 
     this.expressionTypes = new ParseTreeProperty<>();
-
-    this.hasReturnStatement = new ParseTreeProperty<>();
 
     this.implicitDeclarations = implicitDeclarations;
 
@@ -184,8 +181,6 @@ final class SemanticChecker extends RegxBaseListener {
     if (functions.get(functionCtx).getReturnType() == VOID) {
       errors.add(new ReturnFromVoidFunctionError(fromContext(ctx)));
     }
-
-    hasReturnStatement.put(functionCtx, true);
   }
 
   @Override
@@ -218,11 +213,23 @@ final class SemanticChecker extends RegxBaseListener {
       return;
     }
 
-    if (functions.get(ctx).getReturnType() != VOID && hasReturnStatement.get(ctx) == null) {
+    if (functions.get(ctx).getReturnType() != VOID && !checkIfFunctionHasReturn(ctx)) {
       errors.add(new MissingReturnInFunctionError(ctx.identifier().getText(), fromContext(ctx)));
     }
 
     symbolTable.exitScope();
+  }
+
+  private boolean checkIfFunctionHasReturn(FunctionDeclarationContext ctx) {
+    List<StatementContext> statements = ctx.block().statement();
+
+    for (int i = statements.size() - 1; i >= 0; --i) {
+      if (statements.get(i).returnStatement() != null) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   @Override
