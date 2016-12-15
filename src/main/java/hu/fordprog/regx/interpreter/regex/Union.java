@@ -82,7 +82,40 @@ public class Union implements Regex {
   }
 
   @Override
+  public Regex simplify() {
+    Union union = new Union();
+
+    for(Concatenation child : children){
+      Concatenation concat = (Concatenation) child.simplify();
+
+      union.getChildren().add(concat);
+    }
+
+    return RegexSimplifier.simplify(union);
+  }
+
+  @Override
   public String asText() {
     return children.stream().map(Regex::asText).collect(joining("+"));
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    Union union = (Union) o;
+
+    return getChildren().equals(union.getChildren());
+
+  }
+
+  @Override
+  public int hashCode() {
+    return getChildren().hashCode();
   }
 }

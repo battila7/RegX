@@ -88,7 +88,39 @@ public class Concatenation implements Regex {
   }
 
   @Override
+  public Regex simplify() {
+    Concatenation concat = new Concatenation();
+
+    for (Term child : children){
+      Term term = (Term)child.simplify();
+      concat.getChildren().add(term);
+    }
+
+    return concat;
+  }
+
+  @Override
   public String asText() {
     return children.stream().map(Regex::asText).collect(joining());
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    Concatenation that = (Concatenation) o;
+
+    return getChildren().equals(that.getChildren());
+
+  }
+
+  @Override
+  public int hashCode() {
+    return getChildren().hashCode();
   }
 }

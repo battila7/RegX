@@ -53,7 +53,16 @@ public class ClosureTerm extends Term {
     return RegexUnionNormForm.normalize(new ClosureTerm(atom));
   }
 
+  @Override
+  public Regex simplify(){
+    Atom atom = (Atom) getChild().simplify();
+
+    return RegexSimplifier.simplify(new ClosureTerm(atom));
+  }
+
   public String asText() {
     return super.asText() + "*";
   }
+
+
 }

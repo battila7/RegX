@@ -5,5 +5,7 @@ public interface Regex {
 
   Regex normalize();
 
+  Regex simplify();
+
   String asText();
 }

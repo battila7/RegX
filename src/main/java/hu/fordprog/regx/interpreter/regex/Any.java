@@ -15,4 +15,9 @@ public class Any implements Atom {
   public Regex normalize() {
     return this;
   }
+
+  @Override
+  public Regex simplify() {
+    return null;
+  }
 }

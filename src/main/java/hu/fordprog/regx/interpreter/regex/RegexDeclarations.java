@@ -88,7 +88,7 @@ public class RegexDeclarations implements ImplicitDeclarationSource {
   private static Object simplifyRegex(List<Object> arguments){
     Regex regex = (Regex)arguments.get(0);
 
-    Regex simplified = regex;//.simplify();
+    Regex simplified = regex.simplify();
 
     return simplified;
   }

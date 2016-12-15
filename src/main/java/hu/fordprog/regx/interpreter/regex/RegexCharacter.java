@@ -28,7 +28,32 @@ public class RegexCharacter implements Atom {
   }
 
   @Override
+  public Regex simplify() {
+    return this;
+  }
+
+  @Override
   public String asText() {
     return character;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    RegexCharacter character1 = (RegexCharacter) o;
+
+    return getCharacter().equals(character1.getCharacter());
+
+  }
+
+  @Override
+  public int hashCode() {
+    return getCharacter().hashCode();
   }
 }
