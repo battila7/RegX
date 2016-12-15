@@ -7,6 +7,7 @@ import static hu.fordprog.regx.interpreter.symbol.Type.STRING;
 import static hu.fordprog.regx.interpreter.symbol.Type.VOID;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
+import static java.util.stream.Collectors.toList;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -52,6 +53,12 @@ public class RegexDeclarations implements ImplicitDeclarationSource {
             STRING, RegexDeclarations::regexToString);
 
     declarations.add(nativeFunction("as_text", asTextFn));
+
+    NativeFunction substituteFn =
+        new NativeFunction(asList(nativeArgument("target", REGEX), nativeArgument("str", STRING),
+            nativeArgument("replacement", REGEX)), VOID, RegexDeclarations::substitute);
+
+    declarations.add(nativeFunction("substitute", substituteFn));
 
     return declarations;
   }
@@ -99,4 +106,28 @@ public class RegexDeclarations implements ImplicitDeclarationSource {
     return regex.asText();
   }
 
+  private static Object substitute(List<Object> arguments) {
+    Union union = (Union)arguments.get(0);
+
+    List<Term> terms = getTermsWithRegexCharacter(union);
+
+    replaceCharacterWithRegex(terms, (String)arguments.get(1), (Union)arguments.get(2));
+
+    return VOID_RETURN_VALUE;
+  }
+
+  private static void replaceCharacterWithRegex(List<Term> terms, String s, Union regex) {
+    terms.stream()
+        .filter(t -> t.getChild().asText().equals(s))
+        .forEach(t -> t.setChild(new Group(regex)));
+  }
+
+  private static List<Term> getTermsWithRegexCharacter(Union union) {
+    return union.getChildren().stream()
+        .map(Concatenation::getChildren)
+        .flatMap(List::stream)
+        .filter(t -> t.getChild() != null)
+        .filter(t -> t.getChild() instanceof RegexCharacter)
+        .collect(toList());
+  }
 }

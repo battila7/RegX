@@ -53,18 +53,6 @@ public class App {
   }
 
   private static InputReader getInput(Arguments arguments) {
-    /*
-     * Remove in release
-     */
-    /*
-    if (DEBUG) {
-      String str =
-      "function void main() { regex asd = /((ab+c*)d*)*/;"
-          + " regex b = simplify(asd); print(asText(b));}";
-
-      return new ConstantInputReader(str);
-    }
-    */
     if (arguments.files.isEmpty()) {
       return new StdinInputReader();
     }
