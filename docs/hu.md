@@ -111,6 +111,8 @@ Mindeképpen a `function` kulcsszóval kell tehát kezdenünk a függvények dek
 
 Az azonosító lesz a függvény neve, amivel majd meg tudjuk hívni. Erre ugyanazok a szabályok vonatkoznak, mint a változók azonosítóira. 
 
+### Paraméterlista
+
 A függvény formális paraméterlistáját (amennyiben elfogad paramétereket) zárójelek között kell megadnunk. Ebben a formális paramétereket vesszővel elválasztva lehet felsorolni:
 
 ~~~~
@@ -119,12 +121,16 @@ A függvény formális paraméterlistáját (amennyiben elfogad paramétereket) 
   }
 ~~~~
 
+### Törzs
+
 A függvény törzsét kapcsos zárójelek között adhatjuk meg, melyek azonban elhagyhatóak, ha a függvény mindössze egyetlen utasításból áll. Például:
 
 ~~~~
   function void prnt(string str)
     print(str);
 ~~~~ 
+
+### Visszatérési érték
 
 Ha a függvény visszatérési értéke nem `void`, akkor a `return` segítségével térhetünk vissza a függvényből valamilyen értékkel:
 
@@ -136,4 +142,60 @@ Ha a függvény visszatérési értéke nem `void`, akkor a `return` segítség�
 
 A visszaadott érték típusának meg kell egyeznie a függvény szignatúrájában meghatározott típussal.
 
-A függvényben lehetséges összes végrehajtási ágon szerepelnie kell egy `return` utasításnak.
+Ha a függvény visszaad valamilyen értéket, akkor nem lehet olyan végrehajtási ág, amelynek futása ne egy `return` utasítással érne véget. Például:
+
+~~~~
+  // helytelen
+  function string a() {
+    for (e : []) 
+      return "str";
+  } 
+
+  // helyes
+  function string b() {
+    for (e : []) 
+      return "str";
+
+    return "abc";
+  }
+~~~~
+
+### main
+
+Ahhoz, hogy a programunk futtatható legyen, szükség van egy `main` függvényre, melynek a szignatúrája a következő kell, hogy legyen:
+
+~~~~
+  function void main() {
+    // főprogram
+  }
+~~~~
+
+Tehát a visszatérési értéke `void` és nem vár paramétereket.
+
+## Hatáskör
+
+Egy változó abban a blokkban (vagy annak gyermekblokkjaiban) lesz látható, ahol deklarálásra került, és csak a deklarációt követően. Nincsen *forward declaration*, egy változó vagy függvény csak az utána deklarált változók, függvények számára látható.
+
+A különböző blokkokban deklarált, azonos nevű változók elfedik egymást. Például:
+
+~~~~
+  string str;
+
+  function void a() {
+    string str; // elfedi a külső str-t
+  }
+~~~~
+
+Azonban azonos blokkon belül nem lehet két azonos nevű változót deklarálni:
+
+~~~~
+  function void a() {
+    string str;
+
+    string str; // Hiba! Már van ilyen nevű változó ebben a blokkban.
+  }
+~~~~
+
+Új blokkot a függvények és a `for` ciklusok nyitnak. Más módon nincs lehetőségünk új blokk létrehozására.
+
+A hatáskörök ilyen módon való kezelése maga után vonja azt is, hogy bármilyen változó vagy függvény, ami a `main` után kerül deklarálásra, használhatatlan lesz a főprogramban, nem kerül kiértékelésre.
