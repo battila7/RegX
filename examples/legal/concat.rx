@@ -1,0 +1,12 @@
+function string concat_list(list lst) {
+  string acc;
+
+  for (e : lst) 
+    acc = concat(acc, e);
+
+  return acc;
+}
+
+function void main() {
+  print(concat_list(["Hello, ", "World", "!"]));
+}

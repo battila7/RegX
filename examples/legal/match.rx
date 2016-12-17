@@ -1,0 +1,7 @@
+function void main() {
+  string str = read_str();
+
+  regex rx = read_regex();
+
+  match(rx, str);
+}

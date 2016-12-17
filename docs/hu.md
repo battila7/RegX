@@ -18,7 +18,7 @@ Változót deklarálni a következő módon tudunk:
   típus azonosító [ = kezdőérték];
 ~~~~
 
-Az azonosító az angol ABC kis- és nagybetűivel, vagy a `$` és `_` karakterekkel kezdődhet és ugyanezekkel, valamint számokkal folytatódhat.
+Az azonosító az angol ABC kis- és nagybetűivel, vagy a `$` és `_` karakterekkel kezdődhet és ugyanezekkel, valamint számokkal áfolytatódhat.
 
 ~~~~
   // szabályos
@@ -28,7 +28,7 @@ Az azonosító az angol ABC kis- és nagybetűivel, vagy a `$` és `_` karaktere
   string 12a;
 ~~~~
 
-Példa különféle típusú változók deklarálására és inicializálásra:
+Példa különféle típusú változók deklarálására és inicializálására:
 
 ~~~~
   string str = "Hello, World!";
@@ -100,7 +100,7 @@ Amennyiben a ciklusmag egyetlen utasításból áll, elhagyhatjuk a kapcsos zár
 
 ## Függvények
 
-Függvények általánosan a következőképpen tudunk deklarálni:
+Függvényt általánosan a következőképpen tudunk deklarálni:
 
 ~~~~
   function visszatérési_érték azonosító([paraméterek])
@@ -299,7 +299,7 @@ Amelynek kimenete:
 
 ### Szóprobléma
 
-A `match` függvény segítségével meghatározhatjuk, hogy egy adott `string` illeszkedik egy egy megadott reguláris kifejezésre. Az eredményt a futtató környezet a standard kimenetre írja:
+A `match` függvény segítségével meghatározhatjuk, hogy egy adott `string` illeszkedik-e egy megadott reguláris kifejezésre. Az eredményt a futtató környezet a standard kimenetre írja:
 
 ~~~~
   match(/abc/, "abc"); <- true
@@ -309,12 +309,12 @@ A `match` függvény segítségével meghatározhatjuk, hogy egy adott `string` 
 
 ### Helyettesítés
 
-Egy karaktert egy reguláris kifejezés belül egy másik reguláris kifejezéssel a `subsitute` függvénnyel tudunk helyettesíteni. Ez a megadott karakter minden előfordulását kicseréli a megadott kifejezésre. A függvény nem ad vissza értéket, az eredeti kifejezést módosítja.
+Egy karaktert egy reguláris kifejezésen belül egy másik reguláris kifejezéssel a `subsitute` függvénnyel tudunk helyettesíteni. Ez a megadott karakter minden előfordulását kicseréli a megadott kifejezésre. A függvény a módosított reguláris kifejezéssel tér vissza.
 
 ~~~~
-  regex r = /ab/;
+  regex s = /ab/;
 
-  substitute(r, "a", /a*b/);
+  regex r = substitute(s, "a", /a*b/);
 
   print(as_text(r)); <- a*bb
 ~~~~
@@ -349,7 +349,7 @@ A listából való törlésre a `pop_front` és a `pop_back` függvények szolg�
   print(s); <- "Hello World!" 
 ~~~~
 
-Egy `string` értékek valamilyen elválasztó karaktersorozat szerinti felbontására használható az `explode` függvény, mely egy listát ad vissza, mely az elválasztott karaktersorozatokat tartalmazza:
+Egy `string` érték valamilyen elválasztó karaktersorozat szerinti felbontására használható az `explode` függvény, mely egy listát ad vissza, mely az elválasztott karaktersorozatokat tartalmazza:
 
 ~~~~
   list lst = explode("abc,def,ghi", ","); <- ["abc", "def", "ghi"];

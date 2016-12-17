@@ -1,0 +1,9 @@
+function void main() {
+  regex r = read_regex();
+
+  regex n = substitute(r, "a", read_regex());
+
+  string s = read_str();
+
+  match(n, s);
+}

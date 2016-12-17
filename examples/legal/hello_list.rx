@@ -1,0 +1,4 @@
+function void main() {
+  for (e : ["Hello, ", "World", "!"])
+    print(e);
+}

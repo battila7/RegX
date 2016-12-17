@@ -1,0 +1,5 @@
+function void main() {
+  for (e : "str") {
+    print(e);
+  }
+}

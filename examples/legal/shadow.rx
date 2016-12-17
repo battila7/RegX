@@ -1,0 +1,13 @@
+string str = "outer";
+
+function void f() {
+  string str = "inner";
+
+  print(str);
+}
+
+function void main() {
+  print(str);
+
+  f();
+}

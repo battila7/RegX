@@ -1,0 +1,7 @@
+function string hello() {
+  return "str";
+}
+
+function void main() {
+  print(hello);
+}

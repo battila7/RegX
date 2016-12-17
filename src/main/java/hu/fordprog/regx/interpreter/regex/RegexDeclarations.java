@@ -20,50 +20,56 @@ import hu.fordprog.regx.interpreter.symbol.Symbol;
 public class RegexDeclarations implements ImplicitDeclarationSource {
   private static final Object VOID_RETURN_VALUE = null;
 
+  private final RegexFactory regexFactory;
+
+  public RegexDeclarations() {
+    this.regexFactory = new RegexFactory();
+  }
+
   @Override
   public List<Symbol> getDeclarations() {
     List<Symbol> declarations = new ArrayList<>();
 
     NativeFunction matchFn =
         new NativeFunction(asList(nativeArgument("rx", REGEX), nativeArgument("str", STRING)),
-            STRING, RegexDeclarations::match);
+            STRING, this::match);
 
     declarations.add(nativeFunction("match", matchFn));
 
     NativeFunction printAuFn =
         new NativeFunction(singletonList(nativeArgument("rx", REGEX)),
-            VOID, RegexDeclarations::printAutomaton);
+            VOID, this::printAutomaton);
 
     declarations.add(nativeFunction("print_automaton", printAuFn));
 
     NativeFunction normalizeFn =
         new NativeFunction(singletonList(nativeArgument("rx", REGEX)),
-            REGEX, RegexDeclarations::normalizeRegex);
+            REGEX, this::normalizeRegex);
 
     declarations.add(nativeFunction("normalize", normalizeFn));
 
     NativeFunction simplifyFn =
         new NativeFunction(singletonList(nativeArgument("rx", REGEX)),
-            REGEX, RegexDeclarations::simplifyRegex);
+            REGEX, this::simplifyRegex);
 
     declarations.add(nativeFunction("simplify", simplifyFn));
 
     NativeFunction asTextFn =
         new NativeFunction(singletonList(nativeArgument("rx", REGEX)),
-            STRING, RegexDeclarations::regexToString);
+            STRING, this::regexToString);
 
     declarations.add(nativeFunction("as_text", asTextFn));
 
     NativeFunction substituteFn =
         new NativeFunction(asList(nativeArgument("target", REGEX), nativeArgument("str", STRING),
-            nativeArgument("replacement", REGEX)), VOID, RegexDeclarations::substitute);
+            nativeArgument("replacement", REGEX)), REGEX, this::substitute);
 
     declarations.add(nativeFunction("substitute", substituteFn));
 
     return declarations;
   }
 
-  private static Object match(List<Object> arguments) {
+  private Object match(List<Object> arguments) {
     String regex = ((Regex)arguments.get(0)).asText();
 
     String s = "\\";
@@ -75,7 +81,7 @@ public class RegexDeclarations implements ImplicitDeclarationSource {
     return VOID_RETURN_VALUE;
   }
 
-  private static Object printAutomaton(List<Object> arguments) {
+  private Object printAutomaton(List<Object> arguments) {
     Union regex = ((Union)arguments.get(0));
 
     System.out.println(regex.makeAutomaton());
@@ -83,51 +89,34 @@ public class RegexDeclarations implements ImplicitDeclarationSource {
     return VOID_RETURN_VALUE;
   }
 
-  private static Object normalizeRegex(List<Object> arguments){
+  private Object normalizeRegex(List<Object> arguments){
     Regex regex = (Regex)arguments.get(0);
 
-    Regex normalized = regex.normalize();
-
-    return normalized;
+    return regex.normalize();
   }
 
 
-  private static Object simplifyRegex(List<Object> arguments){
+  private Object simplifyRegex(List<Object> arguments){
     Regex regex = (Regex)arguments.get(0);
 
-    Regex simplified = regex.simplify();
-
-    return simplified;
+    return regex.simplify();
   }
 
-  private static Object regexToString(List<Object> arguments) {
+  private Object regexToString(List<Object> arguments) {
     Regex regex = (Regex) arguments.get(0);
 
     return regex.asText();
   }
 
-  private static Object substitute(List<Object> arguments) {
-    Union union = (Union)arguments.get(0);
+  private Object substitute(List<Object> arguments) {
+    Regex targetRegex = (Regex)arguments.get(0);
 
-    List<Term> terms = getTermsWithRegexCharacter(union);
+    String target = targetRegex.asText();
 
-    replaceCharacterWithRegex(terms, (String)arguments.get(1), (Union)arguments.get(2));
+    String replacement = ((Regex)arguments.get(2)).asText();
 
-    return VOID_RETURN_VALUE;
-  }
+    String result = target.replace((String)arguments.get(1), replacement);
 
-  private static void replaceCharacterWithRegex(List<Term> terms, String s, Union regex) {
-    terms.stream()
-        .filter(t -> t.getChild().asText().equals(s))
-        .forEach(t -> t.setChild(new Group(regex)));
-  }
-
-  private static List<Term> getTermsWithRegexCharacter(Union union) {
-    return union.getChildren().stream()
-        .map(Concatenation::getChildren)
-        .flatMap(List::stream)
-        .filter(t -> t.getChild() != null)
-        .filter(t -> t.getChild() instanceof RegexCharacter)
-        .collect(toList());
+    return regexFactory.createRegex(result);
   }
 }

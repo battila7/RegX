@@ -1,0 +1,7 @@
+function string id(string str) {
+  return str;
+}
+
+function void main() {
+  id();
+}

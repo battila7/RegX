@@ -1,0 +1,23 @@
+function void print_list(list lst) {
+  for (e : lst) {
+    print(e);
+  }
+}
+
+function void main() {
+  list lst = [];
+
+  push_back(lst, read_str());
+
+  push_front(lst, read_str());
+
+  print_list(lst);
+
+  pop_front(lst);
+
+  print_list(lst);
+
+  pop_back(lst);
+
+  print_list(lst);
+}

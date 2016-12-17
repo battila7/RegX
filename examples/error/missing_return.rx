@@ -1,0 +1,8 @@
+function string cnst() {
+  for (e : []) 
+    return "str";
+}
+
+function void main() {
+  cnst();
+}

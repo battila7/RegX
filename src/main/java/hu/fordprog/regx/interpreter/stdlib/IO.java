@@ -36,12 +36,12 @@ public final class IO implements ImplicitDeclarationSource {
 
   private final ListReader listReader;
 
-  private final RegexReader regexReader;
+  private final RegexFactory regexFactory;
 
   public IO() {
     this.listReader = new ListReader();
 
-    this.regexReader = new RegexReader();
+    this.regexFactory = new RegexFactory();
   }
 
   @Override
@@ -86,7 +86,7 @@ public final class IO implements ImplicitDeclarationSource {
   }
 
   private Object readRegex(List<Object> arguments) {
-    return regexReader.readRegex(scanner.nextLine());
+    return regexFactory.createRegex(scanner.nextLine());
   }
 
   private final class ListReader {
@@ -124,62 +124,6 @@ public final class IO implements ImplicitDeclarationSource {
       }
 
       return processLiteral(ctx);
-    }
-
-    private RegXList processLiteral(StringListLiteralContext ctx) {
-      RegXList list = new RegXList();
-
-      if (ctx.stringLiteralList() != null) {
-        ctx.stringLiteralList().StringLiteral()
-            .stream()
-            .map(TerminalNode::getText)
-            .map(s -> s.substring(1, s.length() - 1))
-            .forEach(list::pushBack);
-      }
-
-      return list;
-    }
-  }
-
-  private final class RegexReader {
-    private final RegularExpressionLexer lexer;
-
-    private final RegularExpressionParser parser;
-
-    private final SyntaxErrorListener errorListener;
-
-    private final RegexFactory regexFactory;
-
-    private RegexReader() {
-      this.errorListener = new SyntaxErrorListener();
-
-      this.lexer = new RegularExpressionLexer(new ANTLRInputStream(""));
-
-      this.lexer.removeErrorListeners();
-      this.lexer.addErrorListener(errorListener);
-
-      this.parser = new RegularExpressionParser(new CommonTokenStream(lexer));
-
-      this.parser.removeErrorListeners();
-      this.parser.addErrorListener(errorListener);
-
-      this.regexFactory = new RegexFactory();
-    }
-
-    private Regex readRegex(String str) {
-      errorListener.clearErrors();
-
-      lexer.setInputStream(new ANTLRInputStream(str));
-
-      parser.setTokenStream(new CommonTokenStream(lexer));
-
-      RegularExpressionParser.RegexContext ctx = parser.regex();
-
-      if (!errorListener.getSyntaxErrors().isEmpty()) {
-        return RegexFactory.createEmptyRegex();
-      }
-
-      return regexFactory.createRegex(ctx);
     }
 
     private RegXList processLiteral(StringListLiteralContext ctx) {
